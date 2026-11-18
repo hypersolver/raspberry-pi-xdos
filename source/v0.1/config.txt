@@ -1,0 +1,8 @@
+[all]
+arm_64bit=0
+kernel=xdos32.img
+hdmi_force_hotplug=1
+hdmi_group=2
+hdmi_mode=16
+disable_splash=1
+gpu_mem=64

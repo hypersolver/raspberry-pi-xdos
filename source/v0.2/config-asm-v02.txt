@@ -1,0 +1,11 @@
+# Raspberry Pi 3B, Circle AArch32 bare metal
+# Retain your previously working bootcode.bin, start.elf, fixup.dat.
+# Do NOT also set kernel=xdos32.img or kernel=usb-keyboard.img.
+[all]
+arm_64bit=0
+kernel=xdos-arm32-asm-v02.img
+hdmi_force_hotplug=1
+hdmi_group=2
+hdmi_mode=16
+disable_splash=1
+# Circle initializes its own framebuffer and USB host.
