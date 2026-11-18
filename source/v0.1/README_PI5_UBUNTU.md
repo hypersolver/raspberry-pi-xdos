@@ -1,13 +1,13 @@
-# Raspberry Pi 5 (Ubuntu ARM64) build host for XD OS ARM32 (Pi 3B+)
+# Raspberry Pi 4 (Ubuntu ARM64) build host for XD OS ARM32 (Pi 3B+)
 
 This directory contains the previously tested-on-user-hardware V0.1 ARM32 XD OS-inspired **static framebuffer demo**, plus ARM64-Ubuntu-host build scripts. It does **not** include a functional XD OS USB stack, nor the original XD OS x86 GUI applications.
 
 ## Roles
-- Pi 5 Ubuntu ARM64: **build host**.
+- Pi 4 Ubuntu ARM64: **build host**.
 - Pi 3B+: **AArch32 bare-metal target** (boots the generated `xdos32.img`).
-- Running Ubuntu on the Pi 5 does not imply Ubuntu or QEMU on the Pi 3B+.
+- Running Ubuntu on the Pi 4 does not imply Ubuntu or QEMU on the Pi 3B+.
 
-## Install prerequisites (on Pi 5 Ubuntu)
+## Install prerequisites (on Pi 4 Ubuntu)
 
 ```bash
 sudo apt update
@@ -19,7 +19,7 @@ uname -m  # expected: aarch64
 ## Rebuild V0.1 (HDMI desktop without USB)
 
 ```bash
-cd /path/to/xdos-arm32-pi5-build
+cd /path/to/xdos-arm32-build
 ./build-v01-on-pi5.sh
 ```
 
@@ -30,7 +30,7 @@ The Makefile uses `clang --target=armv7a-none-eabi -mcpu=cortex-a53` and `llvm-o
 ## Build real Pi 3B+ USB hardware tests separately (Circle)
 
 ```bash
-cd /path/to/xdos-arm32-pi5-build
+cd /path/to/xdos-arm32-build
 ./build-circle-usb-tests-on-pi5.sh
 ```
 
@@ -46,8 +46,8 @@ Sample list: https://github.com/rsta2/circle/blob/master/sample/README
 
 ### Safe installation of a USB test image onto the Pi 3B+ SD card
 
-1. Shut down both boards, remove the **Pi 3B+** SD card and attach it to the Pi 5 with a USB SD reader.
-2. Identify its mounted FAT32 boot volume using `lsblk -f`. **Do not modify the Pi 5 Ubuntu boot partition.**
+1. Shut down both boards, remove the **Pi 3B+** SD card and attach it to the Pi 4 with a USB SD reader.
+2. Identify its mounted FAT32 boot volume using `lsblk -f`. **Do not modify the Pi 4 Ubuntu boot partition.**
 3. Back up the boot volume's `config.txt` and `xdos32.img`.
 4. Copy the built Circle keyboard test `kernel7.img` to the Pi 3B+ boot volume under the name `usbtest.img`.
 5. For this **standalone Circle test**, use Circle's `boot/config32.txt` as `config.txt` and add `kernel=usbtest.img` as its last line. Keep the existing Pi 3B+ firmware on the SD card.
@@ -75,4 +75,6 @@ Circle is GPL-3.0. If you integrate its source code into XD OS and redistribute 
 
 - Original V0.1 ARM32 static display: user confirmed boots and displays HDMI on physical Pi 3B+.
 - The V0.1 source rebuilt in an x86_64 Linux environment using Clang and LLVM.
-- Pi 5/Ubuntu ARM64 build and Circle USB test hardware outcomes: **not yet tested**.
+- Build host: Raspberry Pi 4 running Ubuntu ARM64. Circle USB test hardware outcomes require separate verification.
+
+Build host correction: Raspberry Pi 4 Ubuntu ARM64. Filenames containing pi5 are retained from the original package for compatibility.

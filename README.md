@@ -1,12 +1,12 @@
 # Raspberry Pi XDOS
 
-XD OS ARM32 移植專案。V0.1 套件以 Pi 5 Ubuntu 為建置環境，目標為 Pi 3B+。V0.2 的紀錄使用 Pi 4 編譯，並在 Pi 3B 驗證。
+XD OS ARM32 移植專案。V0.1、V0.2 與 V0.3 均以 Raspberry Pi 4 Ubuntu ARM64 為建置環境，產出供 Raspberry Pi 3B／3B+ 使用的 ARM32 映像。
 
 編譯、MicroSD 部署、實機驗證與 GitHub 發布步驟請見 [操作手冊](OPERATIONS.md)。
 
 ## V0.1 移植紀錄
 
-V0.1 是 ARM32 靜態 framebuffer 桌面展示。建置套件以 Pi 5 Ubuntu ARM64 為建置環境，映像 xdos32.img 的目標為 Pi 3B+。套件紀錄指出 V0.1 曾在 Pi 3B+ 開機並顯示 HDMI 畫面。
+V0.1 是 ARM32 靜態 framebuffer 桌面展示。建置套件以 Pi 4 Ubuntu ARM64 為建置環境，映像 xdos32.img 的目標為 Pi 3B+。套件紀錄指出 V0.1 曾在 Pi 3B+ 開機並顯示 HDMI 畫面。
 
 ## V0.2 實機紀錄
 

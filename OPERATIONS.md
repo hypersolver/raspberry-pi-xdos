@@ -6,7 +6,7 @@
 
 以 V0.1、V0.2 為單位整理各自的原始碼、組譯檔、建置腳本、開機設定與編譯產物。若原始碼以 ZIP 保存，分別解壓到不同目錄，避免建置時混入另一版檔案。先記錄 Raspberry Pi 型號、工具鏈和 Circle 版本。
 
-V0.1 在 Pi 5 Ubuntu ARM64 安裝 clang、lld、llvm、make 與 file 後，進入 source/v0.1 執行 `bash build-v01-on-pi5.sh`。將產出的 `xdos32.img` 放到 Pi 3B+ 的開機分割區，使用套件所附的 `config.txt`（`kernel=xdos32.img`）。詳見 [Pi 5 建置說明](source/v0.1/README_PI5_UBUNTU.md)。
+V0.1 在 Pi 4 Ubuntu ARM64 安裝 clang、lld、llvm、make 與 file 後，進入 source/v0.1 執行 `bash build-v01-on-pi5.sh`。將產出的 `xdos32.img` 放到 Pi 3B+ 的開機分割區，使用套件所附的 `config.txt`（`kernel=xdos32.img`）。詳見 [Pi 4 建置說明](source/v0.1/README_PI5_UBUNTU.md)。
 
 ## 2. 在 Pi 4 編譯 V0.2
 
@@ -37,7 +37,7 @@ sha256sum output/*.img
 
 每個版本分別記錄能否進入桌面、鍵盤能否輸入、滑鼠能否移動和點擊，以及拖曳視窗時是否閃爍。若停在 Splash，先核對 `kernel=` 與 MicroSD 根目錄的檔名。若使用 DEBUG 映像，記下畫面最後一條診斷訊息。
 
-V0.2 已確認能開機，鍵盤與滑鼠正常，拖曳視窗時仍會閃爍。V0.1 套件記錄 Pi 3B+ 已開機並顯示靜態 HDMI 桌面。Pi 5 Ubuntu 建置流程仍待實機驗證。
+V0.2 已確認能開機，鍵盤與滑鼠正常，拖曳視窗時仍會閃爍。V0.1 套件記錄 Pi 3B+ 已開機並顯示靜態 HDMI 桌面。建置主機為 Pi 4 Ubuntu ARM64。
 
 ## 5. 發布到威凱 GitHub
 
