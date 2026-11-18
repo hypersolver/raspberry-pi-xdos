@@ -96,3 +96,6 @@ to its GPLv3 requirements. Retain upstream notices and follow licensing terms.
 
 
 Replace BUILD_USER, BUILD_HOST and /path/to/xdos-build with your build host settings before running the examples.
+
+
+User-reported V0.3 boot timing: approximately 3 seconds from the first boot screen appearing until the desktop is fully open.

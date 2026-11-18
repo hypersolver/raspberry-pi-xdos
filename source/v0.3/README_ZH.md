@@ -94,3 +94,6 @@ sudo python3 -m http.server 80 --bind 0.0.0.0 -d ~/xdos-build/webtest
 
 
 Replace BUILD_USER, BUILD_HOST and /path/to/xdos-build with your build host settings before running the examples.
+
+
+V0.3 使用者實測：從開機畫面出現到桌面完整開啟約需 3 秒。

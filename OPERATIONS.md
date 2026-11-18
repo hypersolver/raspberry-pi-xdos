@@ -48,3 +48,6 @@ V0.2 已確認能開機，鍵盤與滑鼠正常，拖曳視窗時仍會閃爍。
 3. 推送提交與標籤。在 GitHub 的 Releases 頁面，為兩個標籤各建立一筆 Release。
 4. 每筆 Release 附上該版本實際編譯的 `.img` 與 SHA-256，並填入編譯環境和實機測試結果。若同時發布原版和 DEBUG 版，分別標明檔名與測試結果。
 5. 從 GitHub 重新下載各版本的映像並核對 SHA-256。在 Windows PowerShell 可執行 `Get-FileHash -Algorithm SHA256 -LiteralPath '實際映像檔路徑'`。
+
+
+V0.3 使用者實測：從開機畫面出現到桌面完整開啟約需 3 秒。
