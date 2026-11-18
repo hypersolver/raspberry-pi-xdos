@@ -1,0 +1,8 @@
+# RPi 3B, use this with Circle's existing tested config32.txt settings.
+[all]
+arm_64bit=0
+kernel=xdos32-v03.img
+enable_uart=1
+hdmi_force_hotplug=1
+hdmi_group=2
+hdmi_mode=16
