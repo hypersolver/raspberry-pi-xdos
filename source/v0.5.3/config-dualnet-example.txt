@@ -1,0 +1,9 @@
+[all]
+arm_64bit=0
+kernel=xdos32-eth-wifi.img
+enable_uart=1
+hdmi_force_hotplug=1
+hdmi_group=2
+hdmi_mode=16
+disable_splash=1
+gpu_mem=64
