@@ -140,6 +140,8 @@ python3 "$project_root/tools/rc3-uart/apply_xapp_windows.py" \
     "$source_dir/source/95-xdos-arm32-dualnet"
 python3 "$project_root/tools/rc3-uart/remove_update_xapp.py" \
     "$source_dir/source/95-xdos-arm32-dualnet"
+python3 "$project_root/tools/rc3-uart/apply_text_keys.py" \
+    "$source_dir/source/95-xdos-arm32-dualnet" "$work/circle"
 python3 "$project_root/tools/rc3-uart/build_arduino_demos.py" prepare "$source_dir" "$work/circle"
 bash "$project_root/tools/rc3-uart/build_calculator.sh" "$source_dir"
 CIRCLE_HOME="$work/circle" bash "$source_dir/build-on-rpi4.sh"

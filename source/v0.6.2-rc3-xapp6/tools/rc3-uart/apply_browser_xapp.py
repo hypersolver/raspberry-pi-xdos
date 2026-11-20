@@ -34,7 +34,7 @@ edit("kernel.cpp", """    webTask_=new CWebTask(net_,&desktop_);
         Debug("[NET] HTTP worker allocation failed\\r\\n");
         desktop_.SetNetwork(false,"HTTP WORKER FAILED");
         return;
-    }""", "")
+    }""", '    Debug("[NET] Browser HTTP provided by XAPP on request\\r\\n");')
 edit("kernel.cpp", "void CKernel::UpdateNetworkStatus()", """namespace {
 class BrowserXappJob : public CTask {
 public:
@@ -43,12 +43,15 @@ public:
     : fetch_(fetch),network_(network),desktop_(desktop),id_(id)
     {
         strcpy(url_,url);
+        SetName("browser-xapp");
     }
 
     void Run() override
     {
+        CLogger::Get()->Write("BROWSER",LogWarning,"XAPP HTTP request started");
         fetch_(network_,desktop_,url_,id_);
         XappLoaderV1::ReleaseSlot();
+        CLogger::Get()->Write("BROWSER",LogWarning,"XAPP HTTP request finished");
     }
 
 private:
@@ -90,8 +93,23 @@ edit("kernel.cpp", """                        },ctx);
                     return 0;
                 }};
             if (workspace==Desktop::BrowserApp) browserFetch_=nullptr;""")
+edit("app_shortcut.cpp", "    if (!VerifyManifest(entry.manifest,entry.module)) return",
+     """    const bool browser = app == 3;
+    if (browser) {
+        const auto staged = XappLoaderV1::ExecuteFile("SD:/XDOS/INBOX/B2WEB.XAPP",api,true);
+        if (staged != XappLoaderV1::OPEN_FAILED)
+            return staged == XappLoaderV1::OK ? entry.started : "XAPP: staged Browser failed";
+    }
+    if (!VerifyManifest(entry.manifest,entry.module)) return""")
 edit("app_shortcut.cpp", "return XappLoaderV1::ExecuteFile(entry.module,api) == XappLoaderV1::OK ?",
-     "return XappLoaderV1::ExecuteFile(entry.module,api,app==3) == XappLoaderV1::OK ?")
+     "return XappLoaderV1::ExecuteFile(entry.module,api,browser) == XappLoaderV1::OK ?")
+edit("desktop.cpp", "            Open(Browser);SubmitBrowserURL();",
+     "            workspacePending_=BrowserApp;")
+edit("desktop.h", "    bool TakeBrowserRequest(", """    const char *BrowserURL() const { return browserURL_; }
+    bool TakeBrowserRequest(""")
+edit("xdos_lvgl.cpp", "    lv_textarea_set_placeholder_text(workspaceInput_,hint);",
+     """    lv_textarea_set_placeholder_text(workspaceInput_,hint);
+    if (panel == XDOS_PANEL_HTTP) lv_textarea_set_text(workspaceInput_,desktop_->BrowserURL());""")
 edit("xapp_loader.h", "    static Result ExecuteFile", """    static bool HoldSlot();
     static void ReleaseSlot();
     static Result ExecuteFile""")
