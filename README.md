@@ -2,7 +2,9 @@
 
 XD OS ARM32 移植專案。V0.1、V0.2 與 V0.3 均以 Raspberry Pi 4 Ubuntu ARM64 為建置環境，產出供 Raspberry Pi 3B／3B+ 使用的 ARM32 映像。
 
-編譯、MicroSD 部署、實機驗證與 GitHub 發布步驟請見 [操作手冊](OPERATIONS.md)。
+Pi 3B／3B+ 的 RC3 XAPP6 版本、下載、Windows WSL2 編譯、microSD 安裝、桌面應用程式與 UART／區網更新，請見 [XDOS 安裝與操作指南](source/v0.6.2-rc3-xapp6/OPERATIONS_ZH.md)。
+
+早期 V0.1 至 V0.3 的編譯與部署流程請見 [歷史操作手冊](OPERATIONS.md)。
 
 ## V0.1 移植紀錄
 

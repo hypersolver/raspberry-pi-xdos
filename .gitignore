@@ -1,2 +1,5 @@
 /output/
 *.img
+wsl-build-output/
+.venv/
+__pycache__/
