@@ -2,6 +2,7 @@
 
 #include <circle/logger.h>
 #include <circle/synchronize.h>
+#include <circle/xdos_test_debug.h>
 
 namespace {
 struct ScrollSamples {
@@ -202,6 +203,7 @@ void BeginChunk(unsigned left,unsigned right,unsigned top,unsigned bottom)
 
 extern "C" void xdos_scroll_measure_start()
 {
+    if (!XDOS_TEST_DEBUG) return;
     frameTimes = {};
     dmaTimes = {};
     mirrorTimes = {};
@@ -223,6 +225,7 @@ extern "C" void xdos_scroll_measure_start()
 
 extern "C" void xdos_scroll_measure_end()
 {
+    if (!XDOS_TEST_DEBUG) return;
     if (!measuringScroll) return;
     measuringScroll = false;
 #if XDOS_SCROLL_GPU

@@ -1,6 +1,7 @@
 param(
     [string]$Distribution = 'Ubuntu-24.04',
-    [switch]$InstallDependencies
+    [switch]$InstallDependencies,
+    [switch]$TestDebug
 )
 
 $ErrorActionPreference = 'Stop'
@@ -13,5 +14,6 @@ $buildArguments = @("$linuxRoot/tools/build-wsl.sh", $linuxRoot)
 if ($InstallDependencies) {
     $buildArguments += '--install-dependencies'
 }
-wsl.exe --distribution $Distribution --exec bash @buildArguments
+$testDebugValue = [int]$TestDebug.IsPresent
+wsl.exe --distribution $Distribution --exec env "XDOS_TEST_DEBUG=$testDebugValue" bash @buildArguments
 exit $LASTEXITCODE

@@ -53,10 +53,11 @@ edit(kernel,'#include "p0_metrics.h"',"""#include "p0_metrics.h"
 extern "C" unsigned xdos_vc4_clock_us() { return CTimer::GetClockTicks(); }""")
 edit(kernel,"XAPP6-PERF7-VSyncNeon / Pi 3 ARM32","XAPP6-PERF7-VC4-EGL / Pi 3 ARM32")
 edit(kernel,"    lv_refr_now(lv_display_get_default());", """    static CVCHIQDevice gpu(CMemorySystem::Get(),&interrupt_);
-    if (gpu.Initialize() && xdos_vc4_start(screenWidth_,screenHeight_))
-        Debug("[VC4 LVGL] GLES2 presentation active; EGL swap interval=1\\r\\n");
-    else
+    if (gpu.Initialize() && xdos_vc4_start(screenWidth_,screenHeight_)) {
+        if (XDOS_TEST_DEBUG) Debug("[VC4 LVGL] GLES2 presentation active; EGL swap interval=1\\r\\n");
+    } else {
         Debug("[VC4 LVGL] VSyncOpt fallback\\r\\n");
+    }
     lv_refr_now(lv_display_get_default());""")
 for old,new in (("NEWIDGET.XAPP","GEWIDGET.XAPP"),("NEBENCH.XAPP","GEBENCH.XAPP")):
     edit(sample/"app_shortcut.cpp",old,new)

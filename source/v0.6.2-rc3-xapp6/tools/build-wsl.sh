@@ -10,6 +10,11 @@ scroll_mode=${XDOS_SCROLL_MODE:-}
 vc4_lvgl=${XDOS_VC4_LVGL:-0}
 vc4_scroll_cache=${XDOS_VC4_SCROLL_CACHE:-0}
 analytics_mode=${XDOS_ANALYTICS_MODE:-}
+test_debug=${XDOS_TEST_DEBUG:-0}
+case "$test_debug" in
+    0|1) ;;
+    *) printf 'XDOS_TEST_DEBUG must be 0 or 1\n' >&2; exit 1 ;;
+esac
 case "$analytics_mode" in
     "") ;;
     analyticsbase|analyticscache|analyticsregion) vc4_scroll_cache=1 ;;
@@ -67,6 +72,7 @@ exec > >(tee "$output/build.log") 2>&1
 echo "Build output: $output"
 {
     printf 'Target: Raspberry Pi 3 ARM32\nExpected Circle commit: %s\n' "$circle_commit"
+    printf 'XDOS_TEST_DEBUG=%s\n' "$test_debug"
     uname -m
     arm-none-eabi-gcc --version
     sha256sum "$archive"
@@ -80,6 +86,8 @@ git -C "$work/circle" submodule update --init --depth 1 addon/wlan/hostap addon/
 git -C "$work/circle" submodule status --recursive | tee -a "$output/build-info.txt"
 
 (cd "$work/circle" && ./configure -r 3 -p arm-none-eabi- --kernel-max-size 4)
+printf '#pragma once\n#define XDOS_TEST_DEBUG %s\n' "$test_debug" \
+    > "$work/circle/include/circle/xdos_test_debug.h"
 source_dir="$work/$archive_name"
 # The RC3 include can resolve to upstream LVGL instead of Circle's CLVGL wrapper.
 sed -i 's|^#include <lvgl/lvgl.h>$|#include "../../addon/lvgl/lvgl.h"|' \

@@ -34,7 +34,7 @@ edit("kernel.cpp", """    webTask_=new CWebTask(net_,&desktop_);
         Debug("[NET] HTTP worker allocation failed\\r\\n");
         desktop_.SetNetwork(false,"HTTP WORKER FAILED");
         return;
-    }""", '    Debug("[NET] Browser HTTP provided by XAPP on request\\r\\n");')
+    }""", '    if (XDOS_TEST_DEBUG) Debug("[NET] Browser HTTP provided by XAPP on request\\r\\n");')
 edit("kernel.cpp", "void CKernel::UpdateNetworkStatus()", """namespace {
 class BrowserXappJob : public CTask {
 public:
@@ -48,10 +48,10 @@ public:
 
     void Run() override
     {
-        CLogger::Get()->Write("BROWSER",LogWarning,"XAPP HTTP request started");
+        if (XDOS_TEST_DEBUG) CLogger::Get()->Write("BROWSER",LogWarning,"XAPP HTTP request started");
         fetch_(network_,desktop_,url_,id_);
         XappLoaderV1::ReleaseSlot();
-        CLogger::Get()->Write("BROWSER",LogWarning,"XAPP HTTP request finished");
+        if (XDOS_TEST_DEBUG) CLogger::Get()->Write("BROWSER",LogWarning,"XAPP HTTP request finished");
     }
 
 private:

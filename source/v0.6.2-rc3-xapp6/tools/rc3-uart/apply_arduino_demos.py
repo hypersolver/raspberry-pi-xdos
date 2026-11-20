@@ -72,6 +72,7 @@ edit(header, "    bool AtDesktop() const;", """    bool AtDesktop() const;
 edit(header, "    void PaintEvent(int event, int x, int y);", """    void PaintEvent(int event, int x, int y);
     XdosSketchRoutine sketchLoop_ = nullptr, sketchStop_ = nullptr;
     bool sketchActive_ = false, sketchMeasurements_ = false;""")
+edit(ui, '#include "xdos_lvgl.h"', '#include "xdos_lvgl.h"\n#include <circle/xdos_test_debug.h>')
 edit(ui, "    if (ui->workspacePanel_ == XDOS_PANEL_HTTP)", """    if (ui->sketchActive_) {
         ui->sketchLoop_ = nullptr;
         if (ui->sketchMeasurements_) lv_sysmon_performance_pause(lv_display_get_default());
@@ -86,7 +87,7 @@ edit(ui, "    if (ui->workspacePanel_ == XDOS_PANEL_HTTP)", """    if (ui->sketc
         lv_screen_load(ui->homeScreen_);
         // App-owned object delete callbacks must run before the slot is reused.
         lv_obj_delete(screen);
-        if (ui->serial_) {
+        if (XDOS_TEST_DEBUG && ui->serial_) {
             static const char message[] = "[XAPP] Arduino LVGL session closed\\r\\n";
             ui->serial_->Write(message,sizeof message-1);
         }
@@ -112,7 +113,7 @@ edit(ui, "void XDOSLVGL::Refresh(unsigned)", """int32_t XDOSLVGL::RunArduinoSket
     lv_screen_load(demoScreen_);
     if (measurements) lv_sysmon_performance_resume(lv_display_get_default());
     setup();
-    if (serial_) {
+    if (XDOS_TEST_DEBUG && serial_) {
         static const char message[] = "[XAPP] Arduino LVGL setup completed\\r\\n";
         serial_->Write(message,sizeof message-1);
     }

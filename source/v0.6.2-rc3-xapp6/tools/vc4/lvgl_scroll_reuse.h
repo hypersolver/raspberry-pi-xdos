@@ -106,8 +106,9 @@ extern "C" int xdos_gpu_scroll_move(lv_obj_t *obj,int value)
 extern "C" void xdos_gpu_scroll_end()
 {
     if (!scrollScreen) return;
-    CLogger::Get()->Write("SCROLL",LogWarning,
-        "cached_scroll_frames=%u upload_bytes=%u",cacheFrames,(unsigned)uploadBytes);
+    if (XDOS_TEST_DEBUG)
+        CLogger::Get()->Write("SCROLL",LogWarning,
+            "cached_scroll_frames=%u upload_bytes=%u",cacheFrames,(unsigned)uploadBytes);
     scrollScreen=nullptr;
     committedFrame=false;
 }

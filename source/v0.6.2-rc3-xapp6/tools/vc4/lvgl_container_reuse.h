@@ -165,9 +165,10 @@ extern "C" void xdos_analytics_start(lv_obj_t *container)
 extern "C" void xdos_analytics_end()
 {
     if (!cachedContainer) return;
-    CLogger::Get()->Write("SCROLL",LogWarning,
-        "analytics_reuse_frames=%u upload_bytes=%u content_fallback_frames=%u",
-        containerReuseFrames,(unsigned)uploadBytes,contentFallbackFrames);
+    if (XDOS_TEST_DEBUG)
+        CLogger::Get()->Write("SCROLL",LogWarning,
+            "analytics_reuse_frames=%u upload_bytes=%u content_fallback_frames=%u",
+            containerReuseFrames,(unsigned)uploadBytes,contentFallbackFrames);
     cachedContainer=nullptr;
     scrollPending=false;
     xdos_scroll_measure_end();

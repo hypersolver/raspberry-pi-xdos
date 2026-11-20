@@ -23,12 +23,17 @@ edit("kernel.h", "    CUSBHCIDevice usb_;", """    CUSBHCIDevice usb_;
     unsigned bootStartUs_ = 0;
     bool bootNetworkLogged_ = false;
     void LogBootTiming(const char *stage);""")
+edit("kernel.cpp", '#include "p0_metrics.h"', '#include "p0_metrics.h"\n#include <circle/xdos_test_debug.h>')
 edit("kernel.cpp", "boolean CKernel::Initialize()\n{", """void CKernel::LogBootTiming(const char *stage)
 {
+#if XDOS_TEST_DEBUG
     CString line;
     line.Format("[BOOT PERF] %s=%u us\\r\\n",stage,
                 (unsigned)(CTimer::GetClockTicks()-bootStartUs_));
     Debug((const char *)line);
+#else
+    (void)stage;
+#endif
 }
 
 boolean CKernel::Initialize()
