@@ -12,7 +12,6 @@ bool cachedFrame=false, cachedGeometry=false, scrollPending=false;
 int cachedY=0;
 unsigned containerReuseFrames=0;
 unsigned contentFallbackFrames=0;
-unsigned regionRepairFrames=0;
 
 bool VisibleBounds(lv_obj_t *obj,lv_area_t &bounds)
 {
@@ -85,40 +84,20 @@ void ContainerBeforeRefresh(lv_display_t *display)
         return;
     }
     const lv_area_t reused={left,top,right-1,bottom-1};
-    const unsigned dirtyCount=display->inv_p;
-    lv_area_t repairs[LV_INV_BUF_SIZE];
-    unsigned repairCount=0;
-    for (unsigned i=0;i<dirtyCount;++i) {
-        const auto &dirty=display->inv_areas[i];
+    // Source damage cannot be reconstructed reliably from the final dirty
+    // rectangles. A redraw must include everything composited in the viewport.
+    for (unsigned i=0;i<display->inv_p;++i) {
         lv_area_t intersection;
-        if (lv_area_intersect(&intersection,&reused,&dirty) &&
-            (!XDOS_ANALYTICS_REGION || lv_area_is_equal(&intersection,&reused))) {
-            ++contentFallbackFrames;
-            lv_obj_invalidate(cachedContainer);
-            return;
-        }
-        if (XDOS_ANALYTICS_REGION) {
-            // LVGL already redraws damage at its original screen position.
-            // Repair the destination as well, since the cached pixels from
-            // that position can be copied there by the GPU.
-            lv_area_t source;
-            if (!lv_area_intersect(&source,&reused,&dirty)) continue;
-            source.y1-=delta;
-            source.y2-=delta;
-            if (lv_area_intersect(&intersection,&source,&reused))
-                repairs[repairCount++]=intersection;
-        }
+        if (!lv_area_intersect(&intersection,&reused,&display->inv_areas[i])) continue;
+        ++contentFallbackFrames;
+        lv_obj_invalidate(cachedContainer);
+        return;
     }
     if (!xdos_vc4_shift_viewport(delta,left,top,right,bottom)) {
         lv_obj_invalidate(cachedContainer);
         return;
     }
     ++containerReuseFrames;
-    if (repairCount) ++regionRepairFrames;
-    for (unsigned i=0;i<repairCount;++i) {
-        const auto &area=repairs[i];
-        InvalidateContainerRect(area.x1,area.y1,area.x2,area.y2);
-    }
     InvalidateContainerRect(bounds.x1,bounds.y1,bounds.x2,top-1);
     InvalidateContainerRect(bounds.x1,bottom,bounds.x2,bounds.y2);
     InvalidateContainerRect(bounds.x1,top,left-1,bottom-1);
@@ -178,7 +157,6 @@ extern "C" void xdos_analytics_start(lv_obj_t *container)
     cachedFrame=cachedGeometry=scrollPending=false;
     containerReuseFrames=0;
     contentFallbackFrames=0;
-    regionRepairFrames=0;
     uploadBytes=0;
     lv_obj_invalidate(container);
     xdos_scroll_measure_start();
@@ -188,8 +166,8 @@ extern "C" void xdos_analytics_end()
 {
     if (!cachedContainer) return;
     CLogger::Get()->Write("SCROLL",LogWarning,
-        "analytics_reuse_frames=%u upload_bytes=%u content_fallback_frames=%u region_repair_frames=%u",
-        containerReuseFrames,(unsigned)uploadBytes,contentFallbackFrames,regionRepairFrames);
+        "analytics_reuse_frames=%u upload_bytes=%u content_fallback_frames=%u",
+        containerReuseFrames,(unsigned)uploadBytes,contentFallbackFrames);
     cachedContainer=nullptr;
     scrollPending=false;
     xdos_scroll_measure_end();

@@ -10,7 +10,7 @@ mode=sys.argv[3]
 label,prefix={
     "analyticsbase": ("AnalyticsBase2","A2"),
     "analyticscache": ("AnalyticsSafe","CS"),
-    "analyticsregion": ("AnalyticsRegion","RG"),
+    "analyticsregion": ("AnalyticsRegionGuard","R4"),
 }[mode]
 addon=circle/"addon/lvgl"
 files={}
@@ -27,7 +27,6 @@ def edit(path,old,new):
 driver=addon/"lvgl.cpp"
 edit(driver,'#include "lvgl_scroll_reuse.h"',
      f'#include "lvgl_scroll_reuse.h"\n#define XDOS_ANALYTICS_CACHE {int(mode!="analyticsbase")}\n'
-     f'#define XDOS_ANALYTICS_REGION {int(mode=="analyticsregion")}\n'
      '#include "lvgl_container_reuse.h"')
 edit(driver,'#define XDOS_SCROLL_LABEL "vc4cache"',f'#define XDOS_SCROLL_LABEL "{mode}"')
 edit(driver,"if (scrollScreen) uploadBytes+=w*h*2;",
