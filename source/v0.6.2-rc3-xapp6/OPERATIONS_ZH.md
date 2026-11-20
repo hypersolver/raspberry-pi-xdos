@@ -6,6 +6,7 @@ XDOS 是 ARM32 裸機系統。準備 Pi 3B 或 3B+、microSD、HDMI 螢幕、USB
 
 | 版本 | 適用情境 | 驗證狀態 |
 | --- | --- | --- |
+| [HDMI Auto](https://github.com/hypersolver/raspberry-pi-xdos/releases/tag/v0.6.2-rc3-xapp6-hdmi-auto) | 開機自動同步 HDMI、XDOS、LVGL 與 VC4 解析度 | Pi 3B+ 驗證 1080p 官方 Benchmark 上捲無殘影。720p 桌面已在 HDMI 模式驗證版通過。 |
 | [有線精簡版](https://github.com/hypersolver/raspberry-pi-xdos/releases/tag/v0.6.2-rc3-xapp6-wired) | 透過有線 Ethernet 使用 XDOS，核心不含內建 Wi-Fi | Pi 3B+ 已驗證 Browser、鍵鼠、FAT32 隨身碟與核心更新 |
 | [RC3 XAPP6 基準包](packages/XDOS_RC3_XAPP6_PI3_TEST.zip) | 首次安裝和確認硬體 | Pi 3B+ 已開機，官方 Widgets 和 Benchmark 可交替執行 |
 | [AppWindows-BrowserKeys R2](https://github.com/hypersolver/raspberry-pi-xdos/releases/tag/v0.6.2-rc3-xapp6-appwindows-browserkeys) | 現有 XDOS 卡升級。提供 Browser、Widgets、Benchmark 的配對 XAPP | Pi 3B+ 已驗證開機和實體鍵盤八鍵。Browser HTTP 由前一版實機驗證 |
@@ -82,6 +83,8 @@ AppWindows 版本的前五個程式可拖曳標題列，按紅色 **X** 關閉�
 BrowserKeys R2 的 Notepad、Browser 和 Files 文字欄位支援方向鍵、Home、End、Delete 和 Insert。Home／End 移到目前行的行首／行尾，Insert 切換插入和覆寫。Browser 開啟後，在網址欄輸入 HTTP 網址，再按 **OPEN** 或 Enter 發送請求。
 
 ## UART 與區網更新
+
+HDMI Auto 的命令列表、協定格式與新增指令方式見 [UART 指令與開發指南](UART_ZH.md)。使用有線 Ethernet 部署配對檔案、切換開機及回退見 [區網部署指南](NETWORK_UPDATE_ZH.md)。
 
 先確認所選韌體版本支援相應的 UART 指令。AppWindows 與 BrowserKeys R2 使用 **921600 baud、8N1**，早期 XAPP6 基準包使用 **115200 baud**。使用 3.3 V USB–TTL 轉接器，RX 接 Pi TX（GPIO14，實體 pin 8），TX 接 Pi RX（GPIO15，實體 pin 10），並接共地（例如 pin 6）。Pi 使用自己的電源，轉接器 VCC 留空。COM 編號請從 Windows 裝置管理員確認。
 

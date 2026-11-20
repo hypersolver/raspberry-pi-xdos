@@ -3,6 +3,7 @@
 from pathlib import Path
 import os
 import re
+import shutil
 import struct
 import subprocess
 import sys
@@ -57,8 +58,13 @@ def prepare():
     text = bench.read_text(encoding="utf-8")
     if "void xdos_stop_official_benchmark" not in text:
         edits = {
-            "static uint32_t scene_act;": "static lv_timer_t * xdos_scene_timer;\n"
-                "static lv_obj_t * xdos_title;\nstatic uint32_t scene_act;",
+            "static uint32_t scene_act;": """extern void xdos_benchmark_begin(void);
+extern void xdos_benchmark_row(const char *, unsigned, unsigned, unsigned, unsigned);
+extern void xdos_benchmark_end(int);
+static lv_timer_t * xdos_scene_timer;
+static lv_obj_t * xdos_title;
+static uint32_t scene_act;""",
+            "void lv_demo_benchmark(void)\n{": "void lv_demo_benchmark(void)\n{\n    xdos_benchmark_begin();",
             "lv_obj_t * title = lv_label_create(lv_layer_top());":
                 "lv_obj_t * title = xdos_title = lv_label_create(lv_layer_top());",
             "lv_timer_create(next_scene_timer_cb, scenes[0].scene_time, NULL);":
@@ -76,11 +82,44 @@ def prepare():
 
 void lv_demo_benchmark_set_end_cb("""
         }
+        edits.update({
+            "    if(xdos_scene_timer) lv_timer_delete(xdos_scene_timer);":
+                "    xdos_benchmark_end(0);\n    if(xdos_scene_timer) lv_timer_delete(xdos_scene_timer);",
+            '        lv_table_set_cell_value(table, i + 2, 0, scenes[i].name);':
+                '''        lv_table_set_cell_value(table, i + 2, 0, scenes[i].name);
+        const unsigned n = scenes[i].measurement_cnt;
+        xdos_benchmark_row(scenes[i].name, n, n ? scenes[i].fps_avg / n : 0,
+                           n ? scenes[i].render_avg_time / n : 0,
+                           n ? scenes[i].flush_avg_time / n : 0);''',
+            '    lv_table_set_cell_value(table, 1, 0, "All scenes avg.");':
+                '''    const unsigned n = summary->valid_scene_cnt;
+    xdos_benchmark_row("All scenes avg.", n, n ? summary->total_avg_fps / n : 0,
+                       n ? summary->total_avg_render_time / n : 0,
+                       n ? summary->total_avg_flush_time / n : 0);
+    xdos_benchmark_end(1);
+    lv_table_set_cell_value(table, 1, 0, "All scenes avg.");''',
+        })
         for before, after in edits.items():
             if text.count(before) != 1:
                 raise RuntimeError(f"Unexpected Benchmark layout: {before}")
             text = text.replace(before, after)
         bench.write_text(text, encoding="utf-8")
+
+    shutil.copyfile(tools / "benchmark_report.inc", source / "benchmark_report.inc")
+    kernel = source / "kernel.cpp"
+    kernel.write_text(kernel.read_text(encoding="utf-8").replace(
+        '#include "uart_service.h"', '#include "uart_service.h"\n#include "benchmark_report.inc"'),
+        encoding="utf-8")
+    uart = source / "uart_service.h"
+    uart.write_text(uart.read_text(encoding="utf-8").replace(
+        "class XdosUartService {", "void XdosPrintBenchmarkReport(CSerialDevice &serial);\n\nclass XdosUartService {"
+    ).replace(
+        '        if (!strcmp(cmd, "LVGL")) {',
+        '''        if (!strcmp(cmd, "BENCH-RESULT")) {
+            XdosPrintBenchmarkReport(serial);
+            return;
+        }
+        if (!strcmp(cmd, "LVGL")) {'''), encoding="utf-8")
 
     flags = ["-Os", "-mcpu=cortex-a53", "-marm", "-mfloat-abi=hard", "-mfpu=neon-vfpv4",
              "-ffreestanding", "-ffunction-sections", "-fdata-sections", "-fno-unwind-tables",

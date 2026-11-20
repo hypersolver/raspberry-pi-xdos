@@ -58,8 +58,8 @@ edit(source / "xdos_lvgl.h", "    void SuspendMonitor();", """    void SuspendMo
     bool overwriteText_ = false;""")
 edit(source / "xdos_lvgl.cpp", '#include "xdos_lvgl.h"',
      '#include "xdos_lvgl.h"\n#include "xdos_text_keys.h"')
-edit(source / "xdos_lvgl.cpp", "    SuspendMonitor();\n    return body;",
-     "    overwriteText_ = false;\n    SuspendMonitor();\n    return body;")
+edit(source / "xdos_lvgl.cpp", "    return body;",
+     "    overwriteText_ = false;\n    return body;")
 edit(source / "xdos_lvgl.cpp", """bool XDOSLVGL::OnKey(char ch)
 {""", """namespace {
 unsigned LineEdge(lv_obj_t *field, bool end)

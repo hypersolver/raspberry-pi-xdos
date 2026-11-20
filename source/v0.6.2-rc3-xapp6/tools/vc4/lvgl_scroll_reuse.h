@@ -86,6 +86,17 @@ void ScrollFrameCommitted()
 
 extern "C" void xdos_gpu_scroll_begin(lv_obj_t *screen)
 {
+    auto *display=lv_obj_get_display(screen);
+    const auto width=lv_display_get_horizontal_resolution(display);
+    const auto height=lv_display_get_vertical_resolution(display);
+    if (width>1024 || height>768) {
+        // Texture reuse was validated at 1024x768. Larger viewports use
+        // LVGL's normal scroll damage while keeping the VC4 EGL presenter.
+        CLogger::Get()->Write("SCROLL",LogWarning,
+            "Benchmark %ux%u: LVGL scroll redraw; VC4=%u",
+            (unsigned)width,(unsigned)height,(unsigned)xdos_vc4_active());
+        return;
+    }
     scrollScreen=screen;
     committedFrame=false;
     previousComplete=false;

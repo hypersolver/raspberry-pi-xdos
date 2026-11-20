@@ -13,6 +13,18 @@ int cachedY=0;
 unsigned containerReuseFrames=0;
 unsigned contentFallbackFrames=0;
 
+#if XDOS_DIRECTION_TEST
+struct DirectionSamples {
+    ScrollSamples intervals;
+    unsigned frames, reuse, full, lastPresent;
+    u64 bytes, previousBytes;
+    int direction, startY;
+    unsigned distance, contentFallbackStart;
+};
+DirectionSamples directionSamples{};
+bool directionReused=false;
+#endif
+
 bool VisibleBounds(lv_obj_t *obj,lv_area_t &bounds)
 {
     for (auto *p=obj;p;p=lv_obj_get_parent(p)) {
@@ -90,6 +102,7 @@ void ContainerBeforeRefresh(lv_display_t *display)
         lv_area_t intersection;
         if (!lv_area_intersect(&intersection,&reused,&display->inv_areas[i])) continue;
         ++contentFallbackFrames;
+        xdos_vc4_diff_frame();
         lv_obj_invalidate(cachedContainer);
         return;
     }
@@ -98,6 +111,9 @@ void ContainerBeforeRefresh(lv_display_t *display)
         return;
     }
     ++containerReuseFrames;
+#if XDOS_DIRECTION_TEST
+    directionReused=true;
+#endif
     InvalidateContainerRect(bounds.x1,bounds.y1,bounds.x2,top-1);
     InvalidateContainerRect(bounds.x1,bottom,bounds.x2,bounds.y2);
     InvalidateContainerRect(bounds.x1,top,left-1,bottom-1);
@@ -117,12 +133,54 @@ void ContainerBeforeRefresh(lv_display_t *display)
 void ContainerFrameCommitted()
 {
     if (!cachedContainer || lv_obj_get_screen(cachedContainer)!=lv_screen_active()) return;
+#if XDOS_DIRECTION_TEST
+    auto &sample=directionSamples;
+    const auto nextY=lv_obj_get_scroll_y(cachedContainer);
+    if (sample.direction && cachedFrame && nextY!=cachedY) {
+        const unsigned now=CTimer::GetClockTicks();
+        if (sample.frames) sample.intervals.Add(now-sample.lastPresent,250);
+        sample.lastPresent=now;
+        ++sample.frames;
+        if (directionReused) ++sample.reuse;
+        else ++sample.full;
+        sample.bytes+=uploadBytes-sample.previousBytes;
+    }
+    sample.previousBytes=uploadBytes;
+    directionReused=false;
+#endif
     cachedY=lv_obj_get_scroll_y(cachedContainer);
     cachedGeometry=VisibleBounds(cachedContainer,cachedBounds) &&
         ContainerOverlays(cachedBounds,cachedOverlays,cachedOverlayCount);
     cachedFrame=true;
 }
 }
+
+#if XDOS_DIRECTION_TEST
+extern "C" void xdos_analytics_direction_begin(int direction,unsigned distance)
+{
+    auto &sample=directionSamples;
+    sample={};
+    sample.direction=direction;
+    sample.distance=distance;
+    sample.previousBytes=uploadBytes;
+    sample.startY=lv_obj_get_scroll_y(cachedContainer);
+    sample.contentFallbackStart=contentFallbackFrames;
+}
+
+extern "C" void xdos_analytics_direction_end()
+{
+    auto &sample=directionSamples;
+    if (!sample.direction || !cachedContainer) return;
+    CLogger::Get()->Write("SCROLL",LogWarning,
+        "DIR %s target_px=%u start_y=%d end_y=%d frames=%u reuse=%u full=%u content_full=%u bytes_per_frame=%u p95_us=%u vc4=%u",
+        sample.direction>0?"UP":"DOWN",sample.distance,sample.startY,
+        lv_obj_get_scroll_y(cachedContainer),sample.frames,sample.reuse,sample.full,
+        contentFallbackFrames-sample.contentFallbackStart,
+        sample.frames?(unsigned)(sample.bytes/sample.frames):0,
+        sample.intervals.P95(250),(unsigned)xdos_vc4_active());
+    sample.direction=0;
+}
+#endif
 
 extern "C" void xdos_container_prepare_refresh(lv_display_t *display)
 {
@@ -158,6 +216,7 @@ extern "C" void xdos_analytics_start(lv_obj_t *container)
     containerReuseFrames=0;
     contentFallbackFrames=0;
     uploadBytes=0;
+    xdos_vc4_track_uploads(1);
     lv_obj_invalidate(container);
     xdos_scroll_measure_start();
 }
@@ -171,5 +230,6 @@ extern "C" void xdos_analytics_end()
             containerReuseFrames,(unsigned)uploadBytes,contentFallbackFrames);
     cachedContainer=nullptr;
     scrollPending=false;
+    xdos_vc4_track_uploads(0);
     xdos_scroll_measure_end();
 }

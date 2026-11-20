@@ -1,6 +1,7 @@
 """Install the experimental GLES2 display backend on top of VSyncOpt."""
 
 from pathlib import Path
+import os
 import shutil
 import sys
 
@@ -58,6 +59,16 @@ edit(kernel,"    lv_refr_now(lv_display_get_default());", """    static CVCHIQDe
     } else {
         Debug("[VC4 LVGL] VSyncOpt fallback\\r\\n");
     }
+    auto *lvDisplay=lv_display_get_default();
+    unsigned vc4Width,vc4Height,hdmiWidth,hdmiHeight;
+    xdos_vc4_get_geometry(&vc4Width,&vc4Height,&hdmiWidth,&hdmiHeight);
+    CString geometry;
+    geometry.Format("[DISPLAY] XDOS=%ux%u LVGL=%ux%u VC4=%ux%u HDMI=%ux%u\\r\\n",
+                    (unsigned)desktop_.Width(),(unsigned)desktop_.Height(),
+                    (unsigned)lv_display_get_horizontal_resolution(lvDisplay),
+                    (unsigned)lv_display_get_vertical_resolution(lvDisplay),
+                    vc4Width,vc4Height,hdmiWidth,hdmiHeight);
+    Debug(geometry);
     lv_refr_now(lv_display_get_default());""")
 for old,new in (("NEWIDGET.XAPP","GEWIDGET.XAPP"),("NEBENCH.XAPP","GEBENCH.XAPP")):
     edit(sample/"app_shortcut.cpp",old,new)
@@ -93,4 +104,8 @@ for path,text in files.items():
     path.write_text(text,encoding="utf-8")
 for name in ("lvgl_vc4.c","lvgl_vc4.h"):
     shutil.copyfile(Path(__file__).with_name(name),sample/name)
+if os.environ.get("XDOS_VC4_UPLOAD_DIFF") == "1":
+    renderer=sample/"lvgl_vc4.c"
+    renderer.write_text("#define XDOS_VC4_UPLOAD_DIFF 1\n"+renderer.read_text(encoding="utf-8"),
+                        encoding="utf-8")
 shutil.copyfile(Path(__file__).with_name("lvgl_vc4.h"),addon/"lvgl_vc4.h")

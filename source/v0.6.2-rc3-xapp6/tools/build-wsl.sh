@@ -12,6 +12,18 @@ vc4_scroll_cache=${XDOS_VC4_SCROLL_CACHE:-0}
 analytics_mode=${XDOS_ANALYTICS_MODE:-}
 test_debug=${XDOS_TEST_DEBUG:-0}
 wired_only=${XDOS_WIRED_ONLY:-0}
+usb_drivers=${XDOS_USB_DRIVERS:-0}
+case "$usb_drivers" in
+    0) ;;
+    1)
+        if [[ "$wired_only" != 1 ]]; then
+            printf 'XDOS_USB_DRIVERS=1 requires XDOS_WIRED_ONLY=1\n' >&2
+            exit 1
+        fi
+        vc4_lvgl=1
+        ;;
+    *) printf 'XDOS_USB_DRIVERS must be 0 or 1\n' >&2; exit 1 ;;
+esac
 case "$wired_only" in
     0|1) ;;
     *) printf 'XDOS_WIRED_ONLY must be 0 or 1\n' >&2; exit 1 ;;
@@ -55,6 +67,9 @@ fi
 if [[ "$wired_only" == 1 ]]; then
     deployment_name="${deployment_name%-pi3.img}-wired-pi3.img"
 fi
+if [[ "$usb_drivers" == 1 ]]; then
+    deployment_name="${deployment_name%-pi3.img}-usb-drivers-pi3.img"
+fi
 
 if [[ ${2:-} == --install-dependencies ]]; then
     sudo apt-get update
@@ -82,6 +97,7 @@ echo "Build output: $output"
     printf 'Target: Raspberry Pi 3 ARM32\nExpected Circle commit: %s\n' "$circle_commit"
     printf 'XDOS_TEST_DEBUG=%s\n' "$test_debug"
     printf 'XDOS_WIRED_ONLY=%s\n' "$wired_only"
+    printf 'XDOS_USB_DRIVERS=%s\n' "$usb_drivers"
     uname -m
     arm-none-eabi-gcc --version
     sha256sum "$archive"
@@ -106,6 +122,8 @@ sed -i 's/\bsnprintf(/lv_snprintf(/g' \
     "$source_dir/source/95-xdos-arm32-dualnet/xdos_lvgl.cpp" \
     "$source_dir/source/95-xdos-arm32-dualnet/xdos_benchmark.cpp"
 python3 "$project_root/tools/rc3-uart/apply.py" "$source_dir/source/95-xdos-arm32-dualnet"
+python3 "$project_root/tools/rc3-uart/apply_display_autodetect.py" \
+    "$source_dir/source/95-xdos-arm32-dualnet" "$work/circle"
 python3 "$project_root/tools/rc3-uart/apply_external_demos.py" \
     "$source_dir/source/95-xdos-arm32-dualnet" "$work/circle"
 python3 "$project_root/tools/rc3-uart/apply_calculator.py" \
@@ -166,9 +184,63 @@ if [[ "$wired_only" == 1 ]]; then
         "$source_dir/source/95-xdos-arm32-dualnet"
 fi
 python3 "$project_root/tools/rc3-uart/build_arduino_demos.py" prepare "$source_dir" "$work/circle"
+if [[ "$usb_drivers" == 1 ]]; then
+    python3 "$project_root/tools/usb-drivers/apply.py" \
+        "$source_dir/source/95-xdos-arm32-dualnet" "$work/circle"
+    make -C "$work/circle/lib/usb" -j"${JOBS:-2}"
+    python3 "$project_root/tools/usb-drivers/build.py" prepare "$source_dir" "$work/circle"
+fi
+if [[ ${XDOS_HDMI_BENCH_TEST:-0} == 1 ]]; then
+    sed -i -E \
+        -e 's|(SD:/XDOS/INBOX/)[A-Z0-9]+WIDGET\.XAPP|\1HBWIDGET.XAPP|' \
+        -e 's|(SD:/XDOS/INBOX/)[A-Z0-9]+BENCH\.XAPP|\1HBBENCH.XAPP|' \
+        -e 's|(SD:/XDOS/INBOX/)B2WEB\.XAPP|\1HBBROWSE.XAPP|' \
+        "$source_dir/source/95-xdos-arm32-dualnet/app_shortcut.cpp"
+    deployment_name=HDBENCH.IMG
+elif [[ ${XDOS_HDMI_MODES_TEST:-0} == 1 ]]; then
+    sed -i -E \
+        -e 's|(SD:/XDOS/INBOX/)[A-Z0-9]+WIDGET\.XAPP|\1HMWIDGET.XAPP|' \
+        -e 's|(SD:/XDOS/INBOX/)[A-Z0-9]+BENCH\.XAPP|\1HMBENCH.XAPP|' \
+        -e 's|(SD:/XDOS/INBOX/)B2WEB\.XAPP|\1HMBROWSE.XAPP|' \
+        "$source_dir/source/95-xdos-arm32-dualnet/app_shortcut.cpp"
+    deployment_name=HDMIMODE.IMG
+elif [[ ${XDOS_HDMI_TEST:-0} == 1 ]]; then
+    sed -i -E \
+        -e 's|(SD:/XDOS/INBOX/)[A-Z0-9]+WIDGET\.XAPP|\1HDWIDGET.XAPP|' \
+        -e 's|(SD:/XDOS/INBOX/)[A-Z0-9]+BENCH\.XAPP|\1HDBENCH.XAPP|' \
+        -e 's|(SD:/XDOS/INBOX/)B2WEB\.XAPP|\1HDBROWSE.XAPP|' \
+        "$source_dir/source/95-xdos-arm32-dualnet/app_shortcut.cpp"
+    deployment_name=HDMIAUTO.IMG
+elif [[ ${XDOS_VC4_UPLOAD_DIFF:-0} == 1 && ${XDOS_DIRECTION_TEST:-0} == 1 ]]; then
+    sed -i -E \
+        -e 's|(SD:/XDOS/INBOX/)[A-Z0-9]+WIDGET\.XAPP|\1DUWIDGET.XAPP|' \
+        -e 's|(SD:/XDOS/INBOX/)[A-Z0-9]+BENCH\.XAPP|\1DUBENCH.XAPP|' \
+        -e 's|(SD:/XDOS/INBOX/)B2WEB\.XAPP|\1DUBROWSE.XAPP|' \
+        "$source_dir/source/95-xdos-arm32-dualnet/app_shortcut.cpp"
+    deployment_name=DIFFUP.IMG
+elif [[ ${XDOS_DIRECTION_TEST:-0} == 1 ]]; then
+    sed -i -E \
+        -e 's|(SD:/XDOS/INBOX/)[A-Z0-9]+WIDGET\.XAPP|\1SDWIDGET.XAPP|' \
+        -e 's|(SD:/XDOS/INBOX/)[A-Z0-9]+BENCH\.XAPP|\1SDBENCH.XAPP|' \
+        -e 's|(SD:/XDOS/INBOX/)B2WEB\.XAPP|\1SDBROWSE.XAPP|' \
+        "$source_dir/source/95-xdos-arm32-dualnet/app_shortcut.cpp"
+    deployment_name=SCROLLD.IMG
+elif [[ ${XDOS_WINDOW_ANIM_TEST:-0} == 1 ]]; then
+    sed -i -E \
+        -e 's|(SD:/XDOS/INBOX/)[A-Z0-9]+WIDGET\.XAPP|\1WDWIDGET.XAPP|' \
+        -e 's|(SD:/XDOS/INBOX/)[A-Z0-9]+BENCH\.XAPP|\1WDBENCH.XAPP|' \
+        -e 's|(SD:/XDOS/INBOX/)B2WEB\.XAPP|\1WDBROWSE.XAPP|' \
+        "$source_dir/source/95-xdos-arm32-dualnet/app_shortcut.cpp"
+    deployment_name=BENCHFIX.IMG
+fi
 bash "$project_root/tools/rc3-uart/build_calculator.sh" "$source_dir"
 CIRCLE_HOME="$work/circle" bash "$source_dir/build-on-rpi4.sh"
 python3 "$project_root/tools/rc3-uart/build_arduino_demos.py" finish "$source_dir" "$work/circle"
+if [[ "$usb_drivers" == 1 ]]; then
+    python3 "$project_root/tools/usb-drivers/build.py" finish "$source_dir" "$work/circle"
+    mkdir -p "$output/XDOS/DRIVERS"
+    cp "$source_dir/output/"{KEYBOARD,MOUSE,STORAGE,TOUCH}.DRV "$output/XDOS/DRIVERS/"
+fi
 
 (
     cd "$source_dir/output"
@@ -192,6 +264,7 @@ done
 (
     cd "$output"
     sha256sum "$deployment_name" > SHA256SUMS.txt
+    if [[ "$usb_drivers" == 1 ]]; then sha256sum XDOS/DRIVERS/*.DRV >> SHA256SUMS.txt; fi
     sha256sum -c SHA256SUMS.txt
 )
 printf 'Verified image: %s/%s\n' "$output" "$deployment_name"

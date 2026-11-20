@@ -1,6 +1,7 @@
 """Windows UART client for XDOS RC3."""
 
 import argparse
+import csv
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from ipaddress import IPv4Address
 from pathlib import Path
@@ -28,6 +29,39 @@ def exchange(port, command, expected, timeout=5):
         if line.endswith("@XDOS ERROR"):
             raise RuntimeError(f"XDOS rejected {command.split()[0]}")
     raise TimeoutError(f"No XDOS response to {command.split()[0]}")
+
+
+def benchmark_result(port):
+    port.write(b"\n@XDOS BENCH-RESULT\n")
+    deadline = time.monotonic() + 8
+    rows = []
+    metadata = None
+    incoming = bytearray()
+    while time.monotonic() < deadline:
+        incoming.extend(port.read_until(b"\n"))
+        if not incoming.endswith(b"\n"):
+            continue
+        line = incoming.decode("utf-8", errors="replace").strip()
+        incoming.clear()
+        if line.startswith("@XDOS BENCH META,"):
+            metadata = tuple(map(int, line.removeprefix("@XDOS BENCH META,").split(",")))
+        elif line.startswith("@XDOS BENCH ROW,"):
+            rows.append(line.removeprefix("@XDOS BENCH ROW,").rsplit(",", 4))
+        elif line == "@XDOS BENCH COMPLETE @XDOS OK":
+            if not metadata or len(rows) != metadata[0]:
+                raise RuntimeError("Incomplete benchmark report")
+            print(f"VC4 at start/end: {metadata[1]}/{metadata[2]}")
+            if len(metadata) == 5:
+                print(f"Refresh period at start/end (ms): {metadata[3]}/{metadata[4]}")
+            print("Scene,Samples,FPS,Render ms,Flush ms")
+            csv.writer(sys.stdout, lineterminator="\n").writerows(rows)
+            return
+        elif line in ("@XDOS BENCH RUNNING @XDOS OK", "@XDOS BENCH UNAVAILABLE @XDOS OK"):
+            print(line.split()[2])
+            return
+        elif line == "@XDOS ERROR":
+            raise RuntimeError("XDOS rejected BENCH-RESULT")
+    raise TimeoutError("No complete XDOS response to BENCH-RESULT")
 
 
 def send_file(port, name, data, crc):
@@ -92,6 +126,8 @@ def main():
     commands.add_parser("reset")
     commands.add_parser("power", help="Read the Raspberry Pi firmware power status")
     commands.add_parser("lvgl", help="Read the latest LVGL performance sample")
+    commands.add_parser("bench-result", help="Read the completed official LVGL Benchmark results")
+    commands.add_parser("close", help="Close the current XDOS XAPP")
     open_app = commands.add_parser("open", help="Launch an XDOS desktop XAPP")
     open_app.add_argument("shortcut", type=str.upper, choices=(
         "NOTEPAD", "CALCULATOR", "PAINT", "FILES", "BROWSER", "UPDATE", "WIDGETS", "BENCHMARK",
@@ -146,6 +182,11 @@ def main():
             if not match:
                 raise RuntimeError("Invalid LVGL response")
             print("LVGL sample unavailable." if match[1] == "unavailable" else match[1])
+        elif args.command == "bench-result":
+            benchmark_result(port)
+        elif args.command == "close":
+            exchange(port, "CLOSE", "@XDOS CLOSED @XDOS OK")
+            print("Closed current XAPP.")
         elif args.command == "open":
             exchange(port, f"OPEN {args.shortcut}", "@XDOS OPENED @XDOS OK", timeout=15)
             print(f"Opened {args.shortcut}.")

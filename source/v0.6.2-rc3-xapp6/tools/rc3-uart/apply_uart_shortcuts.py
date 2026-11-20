@@ -15,7 +15,7 @@ def edit(name, old, new):
     files[name] = files[name].replace(old, new)
 
 
-edit("uart_service.h", "    struct LvglStats {", """    enum class Shortcut { None, Notepad, Calculator, Paint, Files, Browser, Update, Widgets, Benchmark };
+edit("uart_service.h", "    struct LvglStats {", """    enum class Shortcut { None, Notepad, Calculator, Paint, Files, Browser, Update, Widgets, Benchmark, Close };
 
     Shortcut TakeOpenRequest()
     {
@@ -27,6 +27,11 @@ edit("uart_service.h", "    struct LvglStats {", """    enum class Shortcut { No
     void CompleteOpen(CSerialDevice &serial, bool succeeded)
     {
         Reply(serial,succeeded ? "@XDOS OPENED @XDOS OK\\r\\n" : "@XDOS ERROR\\r\\n");
+    }
+
+    void CompleteClose(CSerialDevice &serial, bool succeeded)
+    {
+        Reply(serial,succeeded ? "@XDOS CLOSED @XDOS OK\\r\\n" : "@XDOS ERROR\\r\\n");
     }
 
     struct LvglStats {""")
@@ -45,7 +50,12 @@ edit("uart_service.h", "    LvglStats lvglStats_{};", """    LvglStats lvglStats
             if (!strcmp(name,entry.name)) return entry.shortcut;
         return Shortcut::None;
     }""")
-edit("uart_service.h", '        if (!strcmp(cmd, "LVGL")) {', """        if (!strncmp(cmd,"OPEN ",5)) {
+edit("uart_service.h", '        if (!strcmp(cmd, "LVGL")) {', """        if (!strcmp(cmd,"CLOSE")) {
+            if (!active_ && shortcut_ == Shortcut::None) shortcut_ = Shortcut::Close;
+            else CompleteClose(serial,false);
+            return;
+        }
+        if (!strncmp(cmd,"OPEN ",5)) {
             const auto requested = LookupShortcut(cmd+5);
             if (mounted && !active_ && shortcut_ == Shortcut::None && requested != Shortcut::None)
                 shortcut_ = requested;
@@ -99,7 +109,8 @@ edit("kernel.cpp", """        if (desktop_.TakeBenchmarkLaunchRequest()) {
 edit("kernel.cpp", """#if XDOS_USE_LVGL
         ui_.Tick(nowUs);
 #endif""", """#if XDOS_USE_LVGL
-        if (uartOpen) uart.CompleteOpen(serial_,canOpen && !ui_.AtDesktop());
+        if (shortcut==Shortcut::Close) uart.CompleteClose(serial_,ui_.CloseCurrentApp());
+        else if (uartOpen) uart.CompleteOpen(serial_,canOpen && !ui_.AtDesktop());
         ui_.Tick(nowUs);
 #else
         if (uartOpen) uart.CompleteOpen(serial_,false);

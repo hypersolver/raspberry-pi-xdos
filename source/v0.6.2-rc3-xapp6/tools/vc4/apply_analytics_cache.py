@@ -1,12 +1,14 @@
 """Build a matched Widgets Analytics test with opt-in container texture reuse."""
 
 from pathlib import Path
+import os
 import shutil
 import sys
 
 
 sample,circle=map(Path,sys.argv[1:3])
 mode=sys.argv[3]
+direction_test=os.environ.get("XDOS_DIRECTION_TEST") == "1"
 label,prefix={
     "analyticsbase": ("AnalyticsBase2","A2"),
     "analyticscache": ("AnalyticsSafe","CS"),
@@ -27,10 +29,11 @@ def edit(path,old,new):
 driver=addon/"lvgl.cpp"
 edit(driver,'#include "lvgl_scroll_reuse.h"',
      f'#include "lvgl_scroll_reuse.h"\n#define XDOS_ANALYTICS_CACHE {int(mode!="analyticsbase")}\n'
+     f'#define XDOS_DIRECTION_TEST {int(direction_test)}\n'
      '#include "lvgl_container_reuse.h"')
 edit(driver,'#define XDOS_SCROLL_LABEL "vc4cache"',f'#define XDOS_SCROLL_LABEL "{mode}"')
 edit(driver,"if (scrollScreen) uploadBytes+=w*h*2;",
-     "if (scrollScreen || cachedContainer) uploadBytes+=w*h*2;")
+     "if (scrollScreen || cachedContainer) uploadBytes+=timing.uploaded_bytes;")
 edit(driver,"\t\t\t\tScrollFrameCommitted();",
      "\t\t\t\tScrollFrameCommitted();\n\t\t\t\tContainerFrameCommitted();")
 edit(sample/"kernel.cpp","XAPP6-PERF7-VC4-Cache / Pi 3 ARM32",f"XAPP6-PERF7-VC4-{label} / Pi 3 ARM32")
@@ -112,6 +115,40 @@ edit(widgets,"void lv_demo_widgets_start_slideshow(void)", """void xdos_widgets_
 }
 
 void lv_demo_widgets_start_slideshow(void)""")
+if direction_test:
+    edit(widgets, "static int32_t analytics_distance;", """static int32_t analytics_distance;
+extern void xdos_analytics_direction_begin(int, unsigned);
+extern void xdos_analytics_direction_end(void);
+static unsigned direction_leg;
+static uint32_t direction_started;
+static uint32_t direction_settling;
+""")
+    start = files[widgets].index("    if (elapsed>=5200)")
+    end = files[widgets].index("\n}",start)
+    files[widgets] = files[widgets][:start] + """    if (elapsed<300) return;
+    if (!direction_started) {
+        direction_started=lv_tick_get();
+        xdos_analytics_direction_begin(direction_leg==0 ? 1 : -1,analytics_distance);
+    }
+    const uint32_t duration=2400;
+    const uint32_t travel=LV_MIN(lv_tick_elaps(direction_started),duration);
+    const int32_t offset=analytics_distance*(int32_t)travel/(int32_t)duration;
+    const int32_t target=direction_leg==0 ? offset : analytics_distance-offset;
+    const int32_t delta=lv_obj_get_scroll_y(tab)-target;
+    if (delta) lv_obj_scroll_by_raw(tab,0,delta);
+    if (travel<duration) return;
+    if (!direction_settling) direction_settling=lv_tick_get();
+    if (lv_tick_elaps(direction_settling)<240) return;
+    xdos_analytics_direction_end();
+    direction_started=direction_settling=0;
+    if (++direction_leg<2) return;
+    lv_timer_delete(timer);
+    analytics_test_timer=NULL;
+    xdos_analytics_end();
+    lv_obj_send_event(tab,LV_EVENT_SCROLL_END,NULL);""" + files[widgets][end:]
+    edit(widgets, "    analytics_started=0;",
+         "    analytics_started=direction_started=direction_settling=direction_leg=0;")
+
 for path,text in files.items():
     path.write_text(text,encoding="utf-8")
 shutil.copyfile(Path(__file__).with_name("lvgl_container_reuse.h"),addon/"lvgl_container_reuse.h")

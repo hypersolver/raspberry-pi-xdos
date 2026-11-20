@@ -125,6 +125,8 @@ def workspace(app):
 
 
 cpp = driver.read_text(encoding="utf-8")
+cpp = replace(cpp, '#include "xdos_lvgl.h"',
+              '#include "xdos_lvgl.h"\n#include <lvgl/src/misc/lv_timer_private.h>')
 cpp = replace(cpp, "void XDOSLVGL::DesktopLoaded",
               Path(__file__).with_name("xapp_window.inc").read_text(encoding="utf-8") +
               "\nvoid XDOSLVGL::DesktopLoaded")
@@ -135,10 +137,7 @@ cpp = replace(cpp, "    if (!input) return;\n    lv_point_t pt;",
 cpp = replace(cpp, """    ui->keypadDisplay_ = nullptr;
     lv_obj_delete_async(ui->demoBack_);""", """    ui->keypadDisplay_ = nullptr;
     if (lv_obj_get_parent(ui->demoScreen_) == ui->homeScreen_) {
-        // Deleting the window also deletes its title-bar close button.
-        lv_obj_delete_async(ui->demoScreen_);
-        ui->demoScreen_ = ui->demoBack_ = nullptr;
-        ui->RestoreMonitor();
+        ui->BeginAppWindowClose();
         return;
     }
     lv_obj_delete_async(ui->demoBack_);""")
@@ -148,6 +147,17 @@ cpp = edit_app(cpp, "OpenCanvas", "\nvoid XDOSLVGL::WorkspaceButton", paint)
 cpp = edit_app(cpp, "OpenWorkspace", "\nint32_t XDOSLVGL::RunArduinoSketch", workspace)
 declarations = replace(header.read_text(encoding="utf-8"), "    void SuspendMonitor();",
                        "    lv_obj_t *OpenAppWindow(const char *title, int width, int height);\n"
+                       "    static void AppWindowClosed(lv_anim_t *animation);\n"
+                       "    static void AppWindowOpened(lv_anim_t *animation);\n"
+                       "    void BoostWindowTimers();\n"
+                       "    void RestoreWindowTimers();\n"
+                       "    void BeginAppWindowClose();\n"
+                       "    void FinishAppWindowClose();\n"
+                       "    bool windowClosing_ = false;\n"
+                       "    bool windowTimersBoosted_ = false;\n"
+                       "    uint32_t windowRefreshPeriod_ = 0, windowAnimationPeriod_ = 0;\n"
                        "    void SuspendMonitor();")
+declarations = replace(declarations, "    bool AtDesktop() const;",
+                       "    bool AtDesktop() const;\n    bool CloseCurrentApp();")
 driver.write_text(cpp, encoding="utf-8")
 header.write_text(declarations, encoding="utf-8")

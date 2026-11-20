@@ -1,4 +1,38 @@
 namespace {
+constexpr int WindowScaleNormal = 256;
+constexpr int WindowScaleSmall = 230;
+
+void SetWindowScale(void *object, int32_t scale)
+{
+    auto *window = static_cast<lv_obj_t *>(object);
+    lv_obj_set_style_transform_scale_x(window, scale, 0);
+    lv_obj_set_style_transform_scale_y(window, scale, 0);
+}
+
+void SetClosingWindowScale(void *object, int32_t scale)
+{
+    SetWindowScale(object, scale);
+    lv_obj_set_style_opa_layered(static_cast<lv_obj_t *>(object),
+        (scale - WindowScaleSmall) * LV_OPA_COVER / (WindowScaleNormal - WindowScaleSmall), 0);
+}
+
+lv_anim_t *StartWindowAnimation(lv_obj_t *window, bool closing, void *owner,
+                                lv_anim_completed_cb_t completed)
+{
+    lv_anim_t animation;
+    lv_anim_init(&animation);
+    lv_anim_set_var(&animation, window);
+    lv_anim_set_user_data(&animation, owner);
+    lv_anim_set_values(&animation,
+        closing ? lv_obj_get_style_transform_scale_x(window, LV_PART_MAIN) : WindowScaleSmall,
+        closing ? WindowScaleSmall : WindowScaleNormal);
+    lv_anim_set_duration(&animation, closing ? 140 : 160);
+    lv_anim_set_exec_cb(&animation, closing ? SetClosingWindowScale : SetWindowScale);
+    lv_anim_set_path_cb(&animation, closing ? lv_anim_path_ease_in : lv_anim_path_ease_out);
+    lv_anim_set_completed_cb(&animation, completed);
+    return lv_anim_start(&animation);
+}
+
 void StyleWindowSurface(lv_obj_t *obj, unsigned background, unsigned foreground,
                         unsigned border, int borderWidth)
 {
@@ -59,6 +93,8 @@ lv_obj_t *XDOSLVGL::OpenAppWindow(const char *title, int width, int height)
     // Position from the top left so drag offsets use the same coordinate space.
     lv_obj_set_size(window, width, height);
     lv_obj_set_pos(window, (desktopWidth-width)/2, (desktopHeight-height)/2);
+    lv_obj_set_style_transform_pivot_x(window, width/2, 0);
+    lv_obj_set_style_transform_pivot_y(window, height/2, 0);
 
     auto *bar = lv_obj_create(window);
     lv_obj_remove_flag(bar, LV_OBJ_FLAG_SCROLLABLE);
@@ -83,6 +119,76 @@ lv_obj_t *XDOSLVGL::OpenAppWindow(const char *title, int width, int height)
     lv_obj_remove_flag(body, LV_OBJ_FLAG_SCROLLABLE);
     lv_obj_set_pos(body, 0, 35);
     lv_obj_set_size(body, width-2, height-37);
-    SuspendMonitor();
+    if (desktopMonitor_) lv_obj_move_foreground(desktopMonitor_);
+    if (StartWindowAnimation(window, false, this, AppWindowOpened))
+        BoostWindowTimers();
+    else
+        SetWindowScale(window, WindowScaleNormal);
     return body;
+}
+
+void XDOSLVGL::BoostWindowTimers()
+{
+    if (windowTimersBoosted_) return;
+    auto *refresh = lv_display_get_refr_timer(lv_obj_get_display(demoScreen_));
+    auto *animation = lv_anim_get_timer();
+    if (refresh) {
+        windowRefreshPeriod_ = refresh->period;
+        lv_timer_set_period(refresh, 16);
+    }
+    if (animation) {
+        windowAnimationPeriod_ = animation->period;
+        lv_timer_set_period(animation, 16);
+    }
+    windowTimersBoosted_ = true;
+}
+
+void XDOSLVGL::RestoreWindowTimers()
+{
+    if (!windowTimersBoosted_) return;
+    auto *refresh = lv_display_get_refr_timer(lv_obj_get_display(demoScreen_));
+    auto *animation = lv_anim_get_timer();
+    if (refresh) lv_timer_set_period(refresh, windowRefreshPeriod_);
+    if (animation) lv_timer_set_period(animation, windowAnimationPeriod_);
+    windowTimersBoosted_ = false;
+}
+
+void XDOSLVGL::AppWindowOpened(lv_anim_t *animation)
+{
+    static_cast<XDOSLVGL *>(lv_anim_get_user_data(animation))->RestoreWindowTimers();
+}
+
+bool XDOSLVGL::CloseCurrentApp()
+{
+    if (!demoScreen_ || !demoBack_ || windowClosing_) return false;
+    lv_obj_send_event(demoBack_, LV_EVENT_CLICKED, nullptr);
+    return true;
+}
+
+void XDOSLVGL::BeginAppWindowClose()
+{
+    if (windowClosing_) return;
+    windowClosing_ = true;
+    auto *window = demoScreen_;
+    lv_obj_add_state(window, LV_STATE_DISABLED);
+    lv_obj_add_state(demoBack_, LV_STATE_DISABLED);
+    lv_anim_delete(window, SetWindowScale);
+    if (StartWindowAnimation(window, true, this, AppWindowClosed))
+        BoostWindowTimers();
+    else
+        FinishAppWindowClose();
+}
+
+void XDOSLVGL::AppWindowClosed(lv_anim_t *animation)
+{
+    static_cast<XDOSLVGL *>(lv_anim_get_user_data(animation))->FinishAppWindowClose();
+}
+
+void XDOSLVGL::FinishAppWindowClose()
+{
+    RestoreWindowTimers();
+    lv_obj_delete_async(demoScreen_);
+    demoScreen_ = demoBack_ = nullptr;
+    windowClosing_ = false;
+    RestoreMonitor();
 }
