@@ -141,6 +141,8 @@ fi
 if [[ ${XDOS_BROWSER_XAPP:-0} == 1 ]]; then
     python3 "$project_root/tools/rc3-uart/apply_browser_xapp.py" \
         "$source_dir/source/95-xdos-arm32-dualnet"
+    python3 "$project_root/tools/rc3-uart/apply_browser_text_xapp.py" \
+        "$source_dir/source/95-xdos-arm32-dualnet"
 fi
 python3 "$project_root/tools/rc3-uart/remove_xds_benchmark.py" \
     "$source_dir/source/95-xdos-arm32-dualnet"
