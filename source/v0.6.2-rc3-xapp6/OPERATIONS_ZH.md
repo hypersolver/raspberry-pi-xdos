@@ -6,6 +6,7 @@ XDOS 是 ARM32 裸機系統。準備 Pi 3B 或 3B+、microSD、HDMI 螢幕、USB
 
 | 版本 | 適用情境 | 驗證狀態 |
 | --- | --- | --- |
+| [有線精簡版](https://github.com/hypersolver/raspberry-pi-xdos/releases/tag/v0.6.2-rc3-xapp6-wired) | 透過有線 Ethernet 使用 XDOS，核心不含內建 Wi-Fi | Pi 3B+ 已驗證 Browser、鍵鼠、FAT32 隨身碟與核心更新 |
 | [RC3 XAPP6 基準包](packages/XDOS_RC3_XAPP6_PI3_TEST.zip) | 首次安裝和確認硬體 | Pi 3B+ 已開機，官方 Widgets 和 Benchmark 可交替執行 |
 | [AppWindows-BrowserKeys R2](https://github.com/hypersolver/raspberry-pi-xdos/releases/tag/v0.6.2-rc3-xapp6-appwindows-browserkeys) | 現有 XDOS 卡升級。提供 Browser、Widgets、Benchmark 的配對 XAPP | Pi 3B+ 已驗證開機和實體鍵盤八鍵。Browser HTTP 由前一版實機驗證 |
 | [AppWindows-CoreUpdate](https://github.com/hypersolver/raspberry-pi-xdos/releases/tag/v0.6.2-rc3-xapp6-appwindows-coreupdate) | 回退 | Pi 3B+ 桌面閒置 CPU 讀值 12%。保留核心更新指令 |
@@ -34,10 +35,10 @@ Set-Location .\raspberry-pi-xdos\source\v0.6.2-rc3-xapp6
 
 ### VC4、Browser XAPP 和測試訊息
 
-在 Ubuntu 的專案版本目錄直接建置，可同時選擇 VC4、RegionGuard 與外部 Browser XAPP。以下是從原始碼建置的配置。要重現實機驗收請使用對應 Release 附件。
+在 Ubuntu 的專案版本目錄直接建置，以下配置使用有線網路、VC4 RegionGuard 與外部 Browser XAPP。省略 XDOS_WIRED_ONLY=1 會沿用一般版的網路配置。以下是從原始碼建置的配置。要重現實機驗收請使用對應 Release 附件。
 
 ```bash
-XDOS_ANALYTICS_MODE=analyticsregion XDOS_BROWSER_XAPP=1 bash tools/build-wsl.sh "$PWD"
+XDOS_WIRED_ONLY=1 XDOS_ANALYTICS_MODE=analyticsregion XDOS_BROWSER_XAPP=1 bash tools/build-wsl.sh "$PWD"
 ```
 
 測試診斷預設關閉。PowerShell 用 `.\build-wsl.ps1 -TestDebug` 開啟。直接在 Ubuntu 建置時，在命令前加 `XDOS_TEST_DEBUG=1`。設為 `0` 可明確關閉。設定會記在 `build-info.txt`。
@@ -97,12 +98,12 @@ $port = 'COM4' # 範例，換成自己的串列埠
 
 ```powershell
 $lan = '192.0.2.10' # 文件範例，換成自己的電腦 LAN IPv4
-$img = '.\xdos32-v062-rc3-xapp6-perf7-browser-keyboard-r2-pi3.img'
-& $uart tools/xdos-uart.py --port $port --baud 921600 net-scp $img --name BRKEY2.IMG --bind $lan
-& $uart tools/xdos-uart.py --port $port --baud 921600 net-scp .\BROWSER.XAPP --name B2WEB.XAPP --bind $lan
-& $uart tools/xdos-uart.py --port $port --baud 921600 net-scp .\LVGLDEMO.XAPP --name B2WIDGET.XAPP --bind $lan
-& $uart tools/xdos-uart.py --port $port --baud 921600 net-scp .\LVGLBENCH.XAPP --name B2BENCH.XAPP --bind $lan
-& $uart tools/xdos-uart.py --port $port --baud 921600 boot $img --name BRKEY2.IMG
+$img = '.\xdos32-v062-rc3-xapp6-perf7-wired-pi3.img'
+& $uart tools/xdos-uart.py --port $port --baud 921600 net-scp $img --name WIRED.IMG --bind $lan
+& $uart tools/xdos-uart.py --port $port --baud 921600 net-scp .\BROWSER.XAPP --name W3WEB.XAPP --bind $lan
+& $uart tools/xdos-uart.py --port $port --baud 921600 net-scp .\LVGLDEMO.XAPP --name W3WIDGET.XAPP --bind $lan
+& $uart tools/xdos-uart.py --port $port --baud 921600 net-scp .\LVGLBENCH.XAPP --name W3BENCH.XAPP --bind $lan
+& $uart tools/xdos-uart.py --port $port --baud 921600 boot $img --name WIRED.IMG
 & $uart tools/xdos-uart.py --port $port --baud 921600 reset
 ```
 
@@ -111,3 +112,5 @@ $img = '.\xdos32-v062-rc3-xapp6-perf7-browser-keyboard-r2-pi3.img'
 重開後再次執行 `ping`。可用 `open BROWSER` 打開 Browser 視窗，或用 `open BENCHMARK` 打開官方 Benchmark。CoreUpdate 及後續版本透過核心執行更新。
 
 若新系統可回應 UART，`boot-clear` 後再 `reset` 可以回到前次設定。若無法開機，關機後取出 microSD，手動把 `kernel=` 改回原映像或還原已確認的 `config.txt` 備份。遇到右上角閃電時先檢查供電，可用支援的 UART 韌體執行 `power` 查看是否曾欠壓。
+
+有線版驗收見 [Pi 3B+ 實測](PI3B_WIRED_ZH.md)，核心尺寸與後續裁減項目見 [核心區段盤點](CORE_SECTIONS_ZH.md)。

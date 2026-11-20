@@ -11,6 +11,11 @@ vc4_lvgl=${XDOS_VC4_LVGL:-0}
 vc4_scroll_cache=${XDOS_VC4_SCROLL_CACHE:-0}
 analytics_mode=${XDOS_ANALYTICS_MODE:-}
 test_debug=${XDOS_TEST_DEBUG:-0}
+wired_only=${XDOS_WIRED_ONLY:-0}
+case "$wired_only" in
+    0|1) ;;
+    *) printf 'XDOS_WIRED_ONLY must be 0 or 1\n' >&2; exit 1 ;;
+esac
 case "$test_debug" in
     0|1) ;;
     *) printf 'XDOS_TEST_DEBUG must be 0 or 1\n' >&2; exit 1 ;;
@@ -47,6 +52,9 @@ fi
 if [[ ${XDOS_BROWSER_XAPP:-0} == 1 ]]; then
     deployment_name="${deployment_name%-pi3.img}-browser-pi3.img"
 fi
+if [[ "$wired_only" == 1 ]]; then
+    deployment_name="${deployment_name%-pi3.img}-wired-pi3.img"
+fi
 
 if [[ ${2:-} == --install-dependencies ]]; then
     sudo apt-get update
@@ -73,6 +81,7 @@ echo "Build output: $output"
 {
     printf 'Target: Raspberry Pi 3 ARM32\nExpected Circle commit: %s\n' "$circle_commit"
     printf 'XDOS_TEST_DEBUG=%s\n' "$test_debug"
+    printf 'XDOS_WIRED_ONLY=%s\n' "$wired_only"
     uname -m
     arm-none-eabi-gcc --version
     sha256sum "$archive"
@@ -152,6 +161,10 @@ python3 "$project_root/tools/rc3-uart/remove_update_xapp.py" \
     "$source_dir/source/95-xdos-arm32-dualnet"
 python3 "$project_root/tools/rc3-uart/apply_text_keys.py" \
     "$source_dir/source/95-xdos-arm32-dualnet" "$work/circle"
+if [[ "$wired_only" == 1 ]]; then
+    python3 "$project_root/tools/rc3-uart/apply_wired_only.py" \
+        "$source_dir/source/95-xdos-arm32-dualnet"
+fi
 python3 "$project_root/tools/rc3-uart/build_arduino_demos.py" prepare "$source_dir" "$work/circle"
 bash "$project_root/tools/rc3-uart/build_calculator.sh" "$source_dir"
 CIRCLE_HOME="$work/circle" bash "$source_dir/build-on-rpi4.sh"
@@ -163,6 +176,11 @@ python3 "$project_root/tools/rc3-uart/build_arduino_demos.py" finish "$source_di
 )
 cp "$source_dir/output/$image_name" "$output/$deployment_name"
 cp "$work/circle/sample/103-xdos-pi3-usb-msc/kernel8-32.elf" "$output/"
+if [[ "$wired_only" == 1 ]] && arm-none-eabi-nm -C "$output/kernel8-32.elf" |
+    grep -E 'CWPASupplicant::|CBcm4343Device::' >/dev/null; then
+    echo "Onboard Wi-Fi is still linked into the wired-only kernel." >&2
+    exit 1
+fi
 if arm-none-eabi-nm "$output/kernel8-32.elf" |
     grep -E ' (lv_demo_widgets|lv_demo_benchmark)$' >/dev/null; then
     echo "An official LVGL demo is still linked into the kernel." >&2
