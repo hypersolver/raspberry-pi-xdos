@@ -26,7 +26,7 @@ public:
 
     struct LvglStats {
         unsigned windowMs, averageUs, maximumUs, calls, labels, cpuPercent;
-        unsigned dmaFlushes, cpuFlushes;
+        unsigned dmaFlushes, cpuFlushes, wfiUs;
     };
 
     void SetLvglStats(const LvglStats &stats) { lvglStats_ = stats; }
@@ -333,10 +333,10 @@ private:
             }
             CString status;
             status.Format("@XDOS LVGL window_ms=%u avg_us=%u max_us=%u calls=%u labels=%u "
-                          "cpu_pct=%u dma_flushes=%u cpu_flushes=%u @XDOS OK\r\n",
+                          "cpu_pct=%u dma_flushes=%u cpu_flushes=%u wfi_us=%u @XDOS OK\r\n",
                           lvglStats_.windowMs,lvglStats_.averageUs,lvglStats_.maximumUs,
                           lvglStats_.calls,lvglStats_.labels,lvglStats_.cpuPercent,
-                          lvglStats_.dmaFlushes,lvglStats_.cpuFlushes);
+                          lvglStats_.dmaFlushes,lvglStats_.cpuFlushes,lvglStats_.wfiUs);
             Reply(serial, (const char *)status);
             return;
         }

@@ -31,4 +31,3 @@ build_module notepad NOTE
 build_module paint PAINT
 build_module workspace FILES -DPANEL=1
 build_module workspace BROWSER -DPANEL=2
-build_module workspace UPDATE -DPANEL=3

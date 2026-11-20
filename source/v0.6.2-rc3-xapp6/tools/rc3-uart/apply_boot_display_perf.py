@@ -99,7 +99,7 @@ edit("kernel.cpp", """            logLine.Format("[LVGL P0] update_avg=%u us max
             uart.SetLvglStats({elapsedUs/1000U,
                                perfCalls ? (unsigned)(perfTotalUs / perfCalls) : 0U,
                                perfMaxUs,perfCalls,labels-perfLabels,cpuPercent,
-                               dmaFlushes-perfDmaFlushes,cpuFlushes-perfCpuFlushes});
+                               dmaFlushes-perfDmaFlushes,cpuFlushes-perfCpuFlushes,idleUs});
             ui_.UpdateMonitor(cpuPercent);
             perfDmaFlushes=dmaFlushes;
             perfCpuFlushes=cpuFlushes;

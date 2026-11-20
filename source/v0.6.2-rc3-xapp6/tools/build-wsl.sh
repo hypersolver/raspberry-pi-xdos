@@ -138,6 +138,8 @@ python3 "$project_root/tools/rc3-uart/remove_xds_benchmark.py" \
     "$source_dir/source/95-xdos-arm32-dualnet"
 python3 "$project_root/tools/rc3-uart/apply_xapp_windows.py" \
     "$source_dir/source/95-xdos-arm32-dualnet"
+python3 "$project_root/tools/rc3-uart/remove_update_xapp.py" \
+    "$source_dir/source/95-xdos-arm32-dualnet"
 python3 "$project_root/tools/rc3-uart/build_arduino_demos.py" prepare "$source_dir" "$work/circle"
 bash "$project_root/tools/rc3-uart/build_calculator.sh" "$source_dir"
 CIRCLE_HOME="$work/circle" bash "$source_dir/build-on-rpi4.sh"
@@ -154,7 +156,7 @@ if arm-none-eabi-nm "$output/kernel8-32.elf" |
     echo "An official LVGL demo is still linked into the kernel." >&2
     exit 1
 fi
-for app in CALC NOTE PAINT FILES BROWSER UPDATE LVGLDEMO LVGLBENCH; do
+for app in CALC NOTE PAINT FILES BROWSER LVGLDEMO LVGLBENCH; do
     cp "$source_dir/output/$app.APP" "$source_dir/output/$app.XAPP" "$output/"
 done
 (

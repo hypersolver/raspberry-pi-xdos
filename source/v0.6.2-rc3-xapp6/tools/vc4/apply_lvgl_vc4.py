@@ -24,6 +24,17 @@ edit(circle/"addon/linux/semaphore.cpp",
 		// Yield keeps the waiter runnable and prevents scheduler WFI.
 		CScheduler::Get ()->MsSleep (1);""")
 
+edit(circle/"addon/linux/completion.cpp",
+     """	while (x->done == 0)
+	{
+		CScheduler::Get ()->Yield ();
+	}""",
+     """	while (x->done == 0)
+	{
+		// The VCHIQ keep-alive worker waits here while the desktop is idle.
+		CScheduler::Get ()->MsSleep (1);
+	}""")
+
 edit(sample/"Makefile","OBJS += xdos_lvgl.o xdos_benchmark.o",
      "OBJS += xdos_lvgl.o xdos_benchmark.o lvgl_vc4.o")
 edit(sample/"Makefile","LIBS := $(CIRCLEHOME)/addon/lvgl/liblvgl.a $(LIBS)",
