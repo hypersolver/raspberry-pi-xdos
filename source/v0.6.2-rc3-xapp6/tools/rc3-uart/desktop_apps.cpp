@@ -111,7 +111,7 @@ unsigned XdosReadDesktopApps(XdosDesktopApp (&apps)[XdosDesktopAppLimit])
     FILINFO entry{};
     while (count < XdosDesktopAppLimit && f_readdir(&dir, &entry) == FR_OK && entry.fname[0]) {
         const auto length = strlen(entry.fname);
-        if (!(entry.fattrib & AM_DIR) && length > 4 &&
+        if (!(entry.fattrib & AM_DIR) && length > 4 && strcasecmp(entry.fname, "UPDATE.APP") &&
             !strcasecmp(entry.fname + length - 4, ".APP") &&
             readManifest(entry.fname, apps[count])) ++count;
     }

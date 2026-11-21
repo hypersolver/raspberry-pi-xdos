@@ -10,6 +10,8 @@ Install RPiDuino in Arduino Boards Manager to build standalone sketches for Pi 2
 
 ## Quick start
 
+- [MultiCore Media release guide and troubleshooting](docs/multicore-media.md)
+
 - [MultiCore APPSCAN release guide and troubleshooting](docs/multicore-appscan.md)
 
 1. [Prepare the microSD and start the XDOS desktop (繁體中文)](docs/xdos-quick-start.zh-TW.md)
