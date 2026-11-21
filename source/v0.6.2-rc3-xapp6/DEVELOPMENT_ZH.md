@@ -10,6 +10,8 @@
 
 [PXLAYOUT Release](https://github.com/hypersolver/raspberry-pi-xdos/releases/tag/v0.6.2-rc3-xapp6-pxlayout) · [安裝、部署、實測與操作](PXLAYOUT_ZH.md) · [原始碼與建置](PXLAYOUT_SOURCE.md)
 
+MultiCore 為獨立效能預發行版。套件內 Pi 3B+ 的 1080p60 UART 紀錄顯示，官方 Benchmark 平均 17 → 46 FPS，捲動場景 10 → 44 FPS。[功能、安裝與原始數據](MULTICORE_ZH.md)
+
 ## 本機實驗映像
 
 以下 IMG 是 Pi 3B+ 的開發測試紀錄。公開下載仍使用 PXLAYOUT。

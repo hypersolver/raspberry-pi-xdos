@@ -24,6 +24,8 @@ XDOS 是將 XD OS 移植到 Raspberry Pi 的 ARM32 裸機桌面系統。以 Circ
 
 ## 開始使用
 
+[MultiCore Pi 3B+ 效能預發行版](https://github.com/hypersolver/raspberry-pi-xdos/releases/tag/v0.6.2-rc3-xapp6-multicore) 提供四核 LVGL 繪圖，套件實測紀錄的 1080p 官方 Benchmark 平均由 17 提升至 46 FPS。安裝時請搭配此版 XAPP。[功能、安裝與實測](source/v0.6.2-rc3-xapp6/MULTICORE_ZH.md)
+
 | 需求 | 文件 |
 | --- | --- |
 | PXLAYOUT 實測、microSD 安裝、部署、播放器及回退 | [Pixel BBS Layout 指南](source/v0.6.2-rc3-xapp6/PXLAYOUT_ZH.md) |
