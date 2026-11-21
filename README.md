@@ -1,39 +1,65 @@
 # Raspberry Pi XDOS
 
-[English](README_EN.md)
+[繁體中文](README_ZH.md) · [Latest prerelease](https://github.com/hypersolver/raspberry-pi-xdos/releases/tag/v0.6.2-rc3-xapp6-pxlayout) · [Base XAPP6 Release](https://github.com/hypersolver/raspberry-pi-xdos/releases/tag/v0.6.2-rc3-xapp6)
 
-XDOS 是將 XD OS 移植到 Raspberry Pi 的 ARM32 裸機桌面系統。以 Circle 提供硬體支援，使用 LVGL 繪製桌面，並從 microSD 載入外部 XAPP。近期版本以 Raspberry Pi 3B+ 為實機驗證平台，搭配 Windows WSL2 交叉編譯。
+XDOS is an ARM32 bare-metal desktop for Raspberry Pi. Circle provides the hardware support, LVGL draws the desktop, and the system loads external XAPPs from microSD. The current public prerelease, PXLAYOUT, was tested on a Raspberry Pi 3B+ at 1280×720 and 1920×1080.
 
-**目前的預發行版是 Pixel BBS Layout。** Pi 3B+ 已在 720p 和 1080p 驗證自適應圖示、文字、間距及九個捷徑。Release 提供核心 IMG、配對 XAPP、原始碼快照與 SHA-256。 [下載 PXLAYOUT](https://github.com/hypersolver/raspberry-pi-xdos/releases/tag/v0.6.2-rc3-xapp6-pxlayout)
+## Why XDOS
 
-## 開始使用
+XDOS started as a port of XD OS to Raspberry Pi. It explores how far a small bare-metal core can provide an interactive desktop, with applications developed and replaced independently. The project also serves as a test bed for boot timing, partial redraw and hardware-assisted display on the Pi 3B+.
 
-| 需求 | 文件 |
+## System architecture
+
+~~~mermaid
+flowchart TD
+    Boot["Pi boot firmware and config.txt"] --> Kernel["XDOS ARM32 kernel"]
+    Kernel --> Circle["Circle hardware services"]
+    Circle --> Devices["SD / FAT32, USB, Ethernet and UART"]
+    Kernel --> UI["LVGL desktop and application windows"]
+    UI --> Display["VC4 GLES2 / EGL VSync or framebuffer fallback"]
+    Kernel --> Loader["XAPP loader and ARM32 host API"]
+    Loader --> Apps["External XAPPs on microSD"]
+    Apps --> UI
+~~~
+
+The core owns startup, device services, the desktop, the XAPP execution slot and recovery commands. The loader checks the AAPCS32 interface and, for modules with direct kernel imports, the kernel fingerprint.
+
+## Development and deployment
+
+~~~mermaid
+flowchart LR
+    Source["Source and pinned dependencies"] --> Build["WSL2 ARM32 cross-build"]
+    Build --> Bundle["Kernel IMG, paired XAPPs and SHA-256"]
+    Bundle --> Stage["UART commands and LAN file transfer"]
+    Stage --> Pi["Pi 3B+ hardware validation"]
+    Pi --> Release["GitHub main, release tag and assets"]
+    Pi -->|Failure| Rollback["Select previous IMG and reset"]
+~~~
+
+Review IMG and ELF changes, build matching XAPPs, and confirm startup, display, input and rollback on hardware before publishing. Each release keeps its own checksums and validation notes.
+
+## Releases
+
+| Release | When to use it |
 | --- | --- |
-| PXLAYOUT 實測、microSD 安裝、部署、播放器及回退 | [Pixel BBS Layout 指南](source/v0.6.2-rc3-xapp6/PXLAYOUT_ZH.md) |
-| 核心 ABI、XAPP API 與使用範例 | [XAPP API 與開發指南](source/v0.6.2-rc3-xapp6/XAPP_API_ZH.md) |
-| 近期實測、媒體實驗及限制 | [研發與驗證紀錄](source/v0.6.2-rc3-xapp6/DEVELOPMENT_ZH.md) |
-| IMG、靜態 RAM、XAPP 保留區及優化優先順序 | [核心區段盤點](source/v0.6.2-rc3-xapp6/CORE_SECTIONS_ZH.md) |
-| WSL2 建置、首次安裝到 microSD、桌面操作 | [XDOS 安裝與操作指南](source/v0.6.2-rc3-xapp6/OPERATIONS_ZH.md) |
-| 使用 Terminal、查詢效能、從 UART 啟動 XAPP | [Terminal Window 操作說明](source/v0.6.2-rc3-xapp6/TERMINAL_ZH.md) |
-| UART 指令、協定與新增指令 | [UART 指令參考](source/v0.6.2-rc3-xapp6/UART_ZH.md) |
-| 區網傳檔、選擇開機映像、RESET 與回退 | [區網部署指南](source/v0.6.2-rc3-xapp6/NETWORK_UPDATE_ZH.md) |
+| [Base RC3 XAPP6](https://github.com/hypersolver/raspberry-pi-xdos/releases/tag/v0.6.2-rc3-xapp6) | Start with the ARM32 baseline, external LVGL demos and base test package |
+| [Pixel BBS Layout](https://github.com/hypersolver/raspberry-pi-xdos/releases/tag/v0.6.2-rc3-xapp6-pxlayout) | Use the current public prerelease with adaptive desktop layout and an SD-based H.264 player |
+| [All releases](https://github.com/hypersolver/raspberry-pi-xdos/releases) | Find earlier builds, assets and rollback versions |
 
-首次安裝時，將 IMG 複製到已有 Raspberry Pi 開機韌體的 FAT 開機分割區，設定 `config.txt` 的 `kernel=`，並安裝同一 Release 的 XAPP。這裡的 IMG 是裸機核心檔。完整步驟與回退方式見上表。
+## Documentation
 
-## 研發紀錄
-
-| 階段 | 里程碑 |
+| What you want to do | Guide |
 | --- | --- |
-| V0.1–V0.3 · ARM32 移植 | V0.1 顯示靜態 HDMI framebuffer 桌面。V0.2 驗證 USB 鍵鼠與視窗操作。V0.3 加入 RAM back buffer、局部重畫、有線網路與 HTTP Browser。當時使用者回報從開機畫面到桌面約 3 秒。 |
-| V0.4–V0.5.4 · 網路與儲存 | 開發 Wi-Fi 和 HTTP 逾時，加入開機 Splash、Ethernet／Wi-Fi 選擇、優先顯示桌面與 FAT32。V0.5、V0.5.2 已從舊 Pi 4 找回原始碼與核心。V0.4 有明確標示的重建版，尚未實機開機。V0.5.1 尚無可驗證原檔。 |
-| V0.6.1–RC3 XAPP6 · LVGL 與外部程式 | 整合 LVGL 局部重畫。官方 Widgets 與 Benchmark 改由外部 XAPP 載入，執行區在開機時保留於 RAM。 |
-| RegionGuard · VideoCore IV | VC4 GLES2 呈現搭配 EGL VSync，保留 VSyncOpt 回退。捲動快取遇到重繪區和快取重疊時採用保守重畫，避免漏圖和殘影。 |
-| AppWindows、BrowserText、Wired · 核心精簡 | 桌面工具改成視窗版 XAPP，補齊文字鍵，將 Browser HTTP 和 HTML 轉文字移到 XAPP。核心保留區網更新，有線版移除內建 Wi-Fi。 |
-| HDMI Auto · 解析度與顯示 | 讓 framebuffer、XDOS、LVGL 和 VC4 使用同一尺寸。720p 桌面已驗證。1080p 的官方 Benchmark 圖形上捲修正版已確認無殘影，EGL VSync 保持啟用。 |
-| Terminal Window · 共用指令 | Terminal 可用桌面捷徑或 UART 啟動，沿用視窗縮放動畫和 CPU 顯示。Terminal 與 UART 共用核心指令表。 |
-| Pixel BBS Layout · 自適應桌面 | 開機進度條和桌面共用 8×8 顆粒主題。Pi 3B+ 的 720p 與 1080p 各完成九個圖示及九個名稱的滑鼠啟動測試。 |
+| Install or update PXLAYOUT and use the desktop | [Installation and operations](source/v0.6.2-rc3-xapp6/PXLAYOUT_EN.md) |
+| Build from source | [Build and dependency revisions](source/v0.6.2-rc3-xapp6/PXLAYOUT_SOURCE.md) |
+| Use UART commands or develop an XAPP | [UART and XAPP API reference](source/v0.6.2-rc3-xapp6/API_EN.md) |
+| Check the hardware results, experimental features and core size | [Development and validation](source/v0.6.2-rc3-xapp6/DEVELOPMENT_EN.md) |
+| Find earlier releases and recovered source | [Version index](VERSIONS.md) |
 
-版本細節、歷史檔案與驗證狀態見 [版本總覽](VERSIONS.md)、[早期版本復原紀錄](archive/PI4_RECOVERY_ZH.md) 和 [HDMI Auto 實測說明](source/v0.6.2-rc3-xapp6/HDMI_AUTO_ZH.md)。早期 V0.1–V0.3 建置與開機方式見 [歷史操作手冊](OPERATIONS.md)。
+The PXLAYOUT core image is 1,491,628 bytes. Download the matching XAPPs and SHA-256 manifest from the same Release.
 
-原始碼與文件維護於 `main`，各版以 Git 標籤和 Releases 查找。[發布流程](RELEASING.md) · [授權及第三方元件](LICENSE.md)
+## Future applications
+
+The architecture can support embedded status panels, offline utility desktops and bare-metal teaching or test benches. Optional media modules and more device drivers are candidates for future work. MP3 playback, 1080p video decoding and audio capture are tracked separately from the public desktop release, with their current limitations documented in the development notes.
+
+Documentation and source are maintained on main. Release tags identify published builds.
