@@ -10,6 +10,8 @@ Install RPiDuino in Arduino Boards Manager to build standalone sketches for Pi 2
 
 ## Quick start
 
+- [SDPRE release, installation and rollback guide](docs/sdpre.md)
+
 - [MultiCore Media release guide and troubleshooting](docs/multicore-media.md)
 
 - [MultiCore APPSCAN release guide and troubleshooting](docs/multicore-appscan.md)

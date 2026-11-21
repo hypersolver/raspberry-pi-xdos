@@ -10,6 +10,8 @@ XDOS 是將 XD OS 移植到 Raspberry Pi 的 ARM32 裸機桌面系統。以 Circ
 
 ## 快速開始
 
+- [SDPRE 發行、安裝與回退說明](docs/sdpre.zh-TW.md)
+
 - [MultiCore Media 發行、實測、操作與常見問題](docs/multicore-media.zh-TW.md)
 
 - [MultiCore APPSCAN 發行、操作與常見問題](docs/multicore-appscan.zh-TW.md)
