@@ -29,7 +29,7 @@ sha256sum output/*.img
 
 1. 將 MicroSD 接到電腦，備份現有 `config.txt`。
 2. 將本次編譯的 `.img` 複製到已有 Raspberry Pi 開機韌體的分割區根目錄。這裡的 `.img` 是由韌體載入的核心檔案。
-3. 開啟該分割區的 `config.txt`，依測試使用的版本設定 `kernel=`。原版 V0.2 的完整設定見 [README](README.md#raspberry-pi-3b-開機)。
+3. 開啟該分割區的 `config.txt`，依測試使用的版本設定 `kernel=`。V0.2 的開機設定見 [config-asm-v02.txt](source/v0.2/config-asm-v02.txt)。
 4. 比對 `kernel=` 與磁碟上的檔名，包含副檔名。V0.2 曾因把 `xdos` 寫成 `xds` 而停在 Splash。
 5. 安全退出 MicroSD，插回 Pi 3B，接上 HDMI、USB 鍵盤和滑鼠後開機。
 
