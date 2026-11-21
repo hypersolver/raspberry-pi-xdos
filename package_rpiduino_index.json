@@ -11,6 +11,31 @@
         {
           "name": "RPiDuino",
           "architecture": "bcm",
+          "version": "0.1.2",
+          "category": "Contributed",
+          "url": "https://raw.githubusercontent.com/hypersolver/raspberry-pi-xdos/main/Arduino%20SDK/packages/rpiduino-bcm-0.1.2.zip",
+          "archiveFileName": "rpiduino-bcm-0.1.2.zip",
+          "checksum": "SHA-256:cc5a271fdb07e4a58f29840ab8b895ffcba44f0d614c67558bb4179bdfbae79b",
+          "size": "8718",
+          "boards": [
+            {
+              "name": "RPiDuino 2"
+            },
+            {
+              "name": "RPiDuino 3/3B+"
+            },
+            {
+              "name": "RPiDuino 4"
+            },
+            {
+              "name": "RPiDuino 5"
+            }
+          ],
+          "toolsDependencies": []
+        },
+        {
+          "name": "RPiDuino",
+          "architecture": "bcm",
           "version": "0.1.1",
           "category": "Contributed",
           "url": "https://raw.githubusercontent.com/hypersolver/raspberry-pi-xdos/main/Arduino%20SDK/packages/rpiduino-bcm-0.1.1.zip",

@@ -20,6 +20,8 @@ rpiduino4.build.core=rpiduino
 rpiduino4.build.model=4
 rpiduino4.build.bits=64
 rpiduino4.build.cpu=cortex-a72
+rpiduino4.upload.tool.serial=usb_cdc
+rpiduino4.upload.protocol=usb_cdc
 
 rpiduino5.name=RPiDuino 5
 rpiduino5.build.board=RPIDUINO_5
@@ -27,3 +29,5 @@ rpiduino5.build.core=rpiduino
 rpiduino5.build.model=5
 rpiduino5.build.bits=64
 rpiduino5.build.cpu=cortex-a76
+rpiduino5.upload.tool.serial=usb_cdc
+rpiduino5.upload.protocol=usb_cdc

@@ -1,5 +1,5 @@
 name=RPiDuino
-version=0.1.1
+version=0.1.2
 rpiduino.python=python3
 rpiduino.python.windows=python
 rpiduino.tool="{rpiduino.python}" "{runtime.platform.path}/tools/build.py" {build.model} {build.bits} {build.cpu}
@@ -21,3 +21,4 @@ recipe.output.tmp_file={build.project_name}.img
 recipe.output.save_file={build.project_name}.{build.board}.img
 
 tools.xdos_uart.upload.pattern="{rpiduino.python}" "{runtime.platform.path}/tools/upload.py" "{upload.port.address}" "{build.path}/{build.project_name}.img"
+tools.usb_cdc.upload.pattern="{rpiduino.python}" "{runtime.platform.path}/tools/upload.py" "{upload.port.address}" "{build.path}/{build.project_name}.img" --cdc-board {build.model}
