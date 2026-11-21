@@ -184,13 +184,22 @@ if [[ "$wired_only" == 1 ]]; then
         "$source_dir/source/95-xdos-arm32-dualnet"
 fi
 python3 "$project_root/tools/rc3-uart/build_arduino_demos.py" prepare "$source_dir" "$work/circle"
+python3 "$project_root/tools/rc3-uart/apply_terminal.py" \
+    "$source_dir/source/95-xdos-arm32-dualnet"
 if [[ "$usb_drivers" == 1 ]]; then
     python3 "$project_root/tools/usb-drivers/apply.py" \
         "$source_dir/source/95-xdos-arm32-dualnet" "$work/circle"
     make -C "$work/circle/lib/usb" -j"${JOBS:-2}"
     python3 "$project_root/tools/usb-drivers/build.py" prepare "$source_dir" "$work/circle"
 fi
-if [[ ${XDOS_HDMI_BENCH_TEST:-0} == 1 ]]; then
+if [[ ${XDOS_TERMINAL_TEST:-0} == 1 ]]; then
+    sed -i -E \
+        -e 's|(SD:/XDOS/INBOX/)[A-Z0-9]+WIDGET\.XAPP|\1TMWIDGET.XAPP|' \
+        -e 's|(SD:/XDOS/INBOX/)[A-Z0-9]+BENCH\.XAPP|\1TMBENCH.XAPP|' \
+        -e 's|(SD:/XDOS/INBOX/)B2WEB\.XAPP|\1TMBROWSE.XAPP|' \
+        "$source_dir/source/95-xdos-arm32-dualnet/app_shortcut.cpp"
+    deployment_name=TERMWIN.IMG
+elif [[ ${XDOS_HDMI_BENCH_TEST:-0} == 1 ]]; then
     sed -i -E \
         -e 's|(SD:/XDOS/INBOX/)[A-Z0-9]+WIDGET\.XAPP|\1HBWIDGET.XAPP|' \
         -e 's|(SD:/XDOS/INBOX/)[A-Z0-9]+BENCH\.XAPP|\1HBBENCH.XAPP|' \
@@ -258,7 +267,7 @@ if arm-none-eabi-nm "$output/kernel8-32.elf" |
     echo "An official LVGL demo is still linked into the kernel." >&2
     exit 1
 fi
-for app in CALC NOTE PAINT FILES BROWSER LVGLDEMO LVGLBENCH; do
+for app in CALC NOTE PAINT FILES BROWSER LVGLDEMO LVGLBENCH TERMINAL; do
     cp "$source_dir/output/$app.APP" "$source_dir/output/$app.XAPP" "$output/"
 done
 (

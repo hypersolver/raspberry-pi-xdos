@@ -130,7 +130,7 @@ def main():
     commands.add_parser("close", help="Close the current XDOS XAPP")
     open_app = commands.add_parser("open", help="Launch an XDOS desktop XAPP")
     open_app.add_argument("shortcut", type=str.upper, choices=(
-        "NOTEPAD", "CALCULATOR", "PAINT", "FILES", "BROWSER", "UPDATE", "WIDGETS", "BENCHMARK",
+        "NOTEPAD", "CALCULATOR", "PAINT", "FILES", "BROWSER", "TERMINAL", "UPDATE", "WIDGETS", "BENCHMARK",
     ))
     commands.add_parser("boot-clear", help="Restore the previous boot configuration")
     upload = commands.add_parser("scp", help="Copy a file into SD:/XDOS/INBOX/")

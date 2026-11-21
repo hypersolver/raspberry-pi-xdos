@@ -19,7 +19,8 @@ addon = circle / "addon/lvgl"
 lvgl = addon / "lvgl"
 work = kit / "output/arduino-demos"
 apps = (("LVGLDEMO", "LVGLWidgetsDemo", "LVGL Widgets"),
-        ("LVGLBENCH", "LVGLBenchmarkDemo", "LVGL Benchmark"))
+        ("LVGLBENCH", "LVGLBenchmarkDemo", "LVGL Benchmark"),
+        ("TERMINAL", None, "Terminal"))
 browser_external = os.environ.get("XDOS_BROWSER_XAPP") == "1"
 if browser_external:
     apps += (("BROWSER", None, "Browser"),)
@@ -137,7 +138,9 @@ void lv_demo_benchmark_set_end_cb("""
     font26 = compile_c(lvgl / "src/font/lv_font_montserrat_26.c")
     all_imports = set()
     for app, sketch, _ in apps:
-        if app == "BROWSER":
+        if app == "TERMINAL":
+            inputs = [compile_c(tools / "terminal_xapp.c")]
+        elif app == "BROWSER":
             entry_obj = work / "browser_xapp.o"
             browser_obj = work / "browser_http.o"
             run("arm-none-eabi-gcc", *flags, "-c", tools / "browser_xapp.c", "-o", entry_obj)
@@ -189,7 +192,7 @@ def finish():
             raise RuntimeError(f"{app}: kernel is missing imports {sorted(missing)}")
         bindings = "\n".join(f"{name} = 0x{symbols[name]:x};" for name in sorted(imports(obj)))
         script = work / f"{app}.ld"
-        file_end_padding = "BYTE(0)" if app == "BROWSER" else ""
+        file_end_padding = "BYTE(0)" if app in ("BROWSER", "TERMINAL") else ""
         script.write_text(f"""OUTPUT_FORMAT("elf32-littlearm")
 OUTPUT_ARCH(arm)
 ENTRY(xapp_entry)

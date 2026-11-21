@@ -1,5 +1,7 @@
 # Raspberry Pi XDOS
 
+目前版本與歷史套件統一由 [版本總覽](VERSIONS.md) 進入。最新的 [Terminal Window 操作說明](source/v0.6.2-rc3-xapp6/TERMINAL_ZH.md) 包含桌面捷徑、UART 指令與區網部署。
+
 XD OS ARM32 移植專案。V0.1、V0.2 與 V0.3 均以 Raspberry Pi 4 Ubuntu ARM64 為建置環境，產出供 Raspberry Pi 3B／3B+ 使用的 ARM32 映像。
 
 Pi 3B／3B+ 的 RC3 XAPP6 版本、下載、Windows WSL2 編譯、microSD 安裝、桌面應用程式與 UART／區網更新，請見 [XDOS 安裝與操作指南](source/v0.6.2-rc3-xapp6/OPERATIONS_ZH.md)。
