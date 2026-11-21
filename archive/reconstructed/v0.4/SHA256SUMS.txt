@@ -1,0 +1,2 @@
+23dc28dfb7dad1acc9b90eda828c756e10da64839d8520287d33e6ae7b3e1424  xdos32-v04-reconstructed-eth.img
+5a4074c33df4e434b22d6924e986671c642a81fd55a10fdb37a2042f15084688  xdos32-v04-reconstructed-wifi.img

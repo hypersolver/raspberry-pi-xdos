@@ -1,0 +1,36 @@
+diff --git a/lib/net/tcpconnection.cpp b/lib/net/tcpconnection.cpp
+index aa934cb4..eab84f03 100644
+--- a/lib/net/tcpconnection.cpp
++++ b/lib/net/tcpconnection.cpp
+@@ -288,7 +288,11 @@ int CTCPConnection::Connect (void)
+ 	case TCPStateSynSent:
+ 	case TCPStateSynReceived:
+ 		m_Event.Clear ();
+-		m_Event.Wait ();
++		if (m_Event.WaitWithTimeout (5U * 1000000U))
++        {
++            // Bounded SYN handshake. Caller closes the failed connection.
++            return -NET_ERROR_CONNECTION_TIMED_OUT;
++        }
+ 		break;
+ 
+ 	case TCPStateEstablished:
+diff --git a/lib/net/transportlayer.cpp b/lib/net/transportlayer.cpp
+index 453d01c8..4765b293 100644
+--- a/lib/net/transportlayer.cpp
++++ b/lib/net/transportlayer.cpp
+@@ -264,9 +264,11 @@ int CTransportLayer::Connect (const CIPAddress &rIPAddress, u16 nPort, u16 nOwnP
+ 	assert (m_pConnection[i] != 0);
+ 	int nResult = ((CNetConnection *) m_pConnection[i])->Connect ();
+ 	if (nResult < 0)
+-	{
+-		return nResult;
+-	}
++    {
++        // Avoid leaking a failed SYN connection on repeated page loads.
++        ((CNetConnection *) m_pConnection[i])->Close ();
++        return nResult;
++    }
+ 	
+ 	return i;
+ }
