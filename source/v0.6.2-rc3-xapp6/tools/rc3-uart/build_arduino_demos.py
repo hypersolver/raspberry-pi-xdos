@@ -18,7 +18,12 @@ source = kit / "source/95-xdos-arm32-dualnet"
 addon = circle / "addon/lvgl"
 lvgl = addon / "lvgl"
 work = kit / "output/arduino-demos"
-apps = (("LVGLDEMO", "LVGLWidgetsDemo", "LVGL Widgets"),
+widget_example = os.environ.get("XDOS_WIDGETS_SKETCH", "LVGLWidgetsDemo")
+widget_titles = {"LVGLWidgetsDemo": "LVGL Widgets", "XappBasic": "Arduino XAPP Basic",
+                 "XappLvgl": "Arduino XAPP LVGL", "XappMedia": "Arduino XAPP Media"}
+if widget_example not in widget_titles:
+    raise SystemExit(f"Unsupported XDOS_WIDGETS_SKETCH: {widget_example}")
+apps = (("LVGLDEMO", widget_example, widget_titles[widget_example]),
         ("LVGLBENCH", "LVGLBenchmarkDemo", "LVGL Benchmark"),
         ("TERMINAL", None, "Terminal"))
 browser_external = os.environ.get("XDOS_BROWSER_XAPP") == "1"
@@ -46,6 +51,8 @@ def set_flags(text, names):
 
 
 def prepare():
+    if widget_example == "XappMedia":
+        raise SystemExit("Build XappMedia with tools/vc4/build_arduino_media.py")
     work.mkdir(parents=True, exist_ok=True)
     config = addon / "lv_conf.h"
     text = config.read_text(encoding="utf-8")
@@ -151,7 +158,7 @@ void lv_demo_benchmark_set_end_cb("""
             sketch_obj = work / f"{app}-sketch.o"
             entry_obj = work / f"{app}-entry.o"
             sketch_flags = []
-            if app == "LVGLDEMO" and os.environ.get("XDOS_ANALYTICS_MODE"):
+            if sketch == "LVGLWidgetsDemo" and os.environ.get("XDOS_ANALYTICS_MODE"):
                 sketch_flags.append("-DXDOS_WIDGETS_ANALYTICS_TEST")
             run("arm-none-eabi-g++", *flags, "-x", "c++", "-std=c++17", "-DRPIDUINO_LVGL_HOST_TIMER",
                 *sketch_flags, "-c", project / f"arduino-demos/{sketch}/{sketch}.ino", "-o", sketch_obj)
@@ -185,14 +192,17 @@ def finish():
         ("_start", "_etext", "xdos_xapp_exec_slot", "xdos_xapp_exec_slot_end"))
     assert start < stop <= start + len(raw) <= slot < slot_end
     fingerprint = zlib.crc32(raw[:stop-start])
-    for app, _, title in apps:
+    selected_apps = apps[:1] if sample[1:] == ["--widgets-only"] else apps
+    for app, _, title in selected_apps:
         obj = work / f"{app}.rel.o"
         missing = imports(obj) - symbols.keys()
         if missing:
             raise RuntimeError(f"{app}: kernel is missing imports {sorted(missing)}")
         bindings = "\n".join(f"{name} = 0x{symbols[name]:x};" for name in sorted(imports(obj)))
         script = work / f"{app}.ld"
-        file_end_padding = "BYTE(0)" if app in ("BROWSER", "TERMINAL") else ""
+        needs_file_end = app in ("BROWSER", "TERMINAL") or (
+            app == "LVGLDEMO" and widget_example != "LVGLWidgetsDemo")
+        file_end_padding = "BYTE(0)" if needs_file_end else ""
         script.write_text(f"""OUTPUT_FORMAT("elf32-littlearm")
 OUTPUT_ARCH(arm)
 ENTRY(xapp_entry)
