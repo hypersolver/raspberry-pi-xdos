@@ -12,6 +12,7 @@ XDOS 是將 XD OS 移植到 Raspberry Pi 的 ARM32 裸機桌面系統。以 Circ
 
 1. [從 microSD 建立 XDOS 並進入桌面](docs/xdos-quick-start.zh-TW.md)
 2. [Arduino 草稿開發、XAPP 部署與執行](docs/arduino-xapp.zh-TW.md)
+3. [XAPP 桌面捷徑與圖示規格](docs/xapp-desktop-spec.zh-TW.md)
 
 ## PXLAYOUT 畫面預覽
 
