@@ -1,4 +1,4 @@
-# RPiDuino Arduino SDK 0.1.0
+# RPiDuino Arduino SDK 0.1.1
 
 [繁體中文](README.zh-TW.md)
 
@@ -8,7 +8,7 @@ RPiDuino builds standalone Arduino sketches for Raspberry Pi using Circle. The f
 
 1. Install Python 3 and the build dependencies below. On Windows, install Python on Windows and the toolchain in the default WSL Ubuntu distribution.
 2. In Arduino IDE, open **File → Preferences → Additional Boards Manager URLs** and add the URL below.
-3. Open Boards Manager, search **RPiDuino**, and install **0.1.0**. Select the board under **Tools → Board → RPiDuino**. Open Blink under **File → Examples → RPiDuino Basics**.
+3. Open Boards Manager, search **RPiDuino**, and install **0.1.1**. Select the board under **Tools → Board → RPiDuino**. Open Blink under **File → Examples → RPiDuino Basics**.
 
     https://raw.githubusercontent.com/hypersolver/raspberry-pi-xdos/main/package_rpiduino_index.json
 
@@ -17,12 +17,20 @@ From Ubuntu or WSL:
 ```sh
 sudo apt install git make python3 gcc-arm-none-eabi libstdc++-arm-none-eabi-dev gcc-aarch64-linux-gnu g++-aarch64-linux-gnu
 arduino-cli core update-index --additional-urls https://raw.githubusercontent.com/hypersolver/raspberry-pi-xdos/main/package_rpiduino_index.json
-arduino-cli core install rpiduino:bcm@0.1.0 --additional-urls https://raw.githubusercontent.com/hypersolver/raspberry-pi-xdos/main/package_rpiduino_index.json
+arduino-cli core install rpiduino:bcm@0.1.1 --additional-urls https://raw.githubusercontent.com/hypersolver/raspberry-pi-xdos/main/package_rpiduino_index.json
 arduino-cli board listall RPiDuino
 arduino-cli compile --fqbn rpiduino:bcm:rpiduino3 --export-binaries /path/to/Blink
 ```
 
 On the first build, the SDK fetches a pinned Circle revision into the Linux user cache. Set `RPIDUINO_CIRCLE_SOURCE` in the Linux build environment to use a local repository containing that revision.
+
+## Upload over Pi 3/3B+ Debug UART
+
+Boot a dedicated test microSD into an XDOS build with its UART updater enabled at 921600 baud. Keep your original XDOS card separate. The updater needs a single active `kernel=` entry in `config.txt` and a 32-bit configuration. Install pyserial in the Python environment used by the IDE (`python -m pip install pyserial` on Windows).
+
+Connect a 3.3 V USB–TTL adapter to the Pi. Adapter RX goes to physical pin 8, TX to pin 10, and GND to pin 6. Leave VCC disconnected. Select **RPiDuino 3/3B+** and the adapter's COM port, close Serial Monitor, and click **Upload**. The tool uses the existing XDOS `PUT` / `DATA` / `END` → `BOOT` → `RESET` workflow with CRC32. The new IMG gets a distinct filename. The original kernel file stays on the test card.
+
+Standalone Blink leaves no XDOS command service running. To upload again, power off, restore the test card's `xdosboot.bak` as `config.txt` (keep a copy of the backup), and boot XDOS again. Blink's ACT LED should alternate 500 ms on and 500 ms off.
 
 ## Boot from microSD
 

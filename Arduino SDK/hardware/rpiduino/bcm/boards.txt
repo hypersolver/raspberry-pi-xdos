@@ -11,6 +11,8 @@ rpiduino3.build.core=rpiduino
 rpiduino3.build.model=3
 rpiduino3.build.bits=32
 rpiduino3.build.cpu=cortex-a53
+rpiduino3.upload.tool.serial=xdos_uart
+rpiduino3.upload.protocol=xdos_uart
 
 rpiduino4.name=RPiDuino 4
 rpiduino4.build.board=RPIDUINO_4

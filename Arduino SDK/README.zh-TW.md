@@ -1,4 +1,4 @@
-# RPiDuino Arduino SDK 0.1.0
+# RPiDuino Arduino SDK 0.1.1
 
 [English](README.md)
 
@@ -8,7 +8,7 @@ RPiDuino 使用 Circle，把 Arduino 草稿編譯成 Raspberry Pi 可從 microSD
 
 1. 使用 Windows 時，先安裝 Windows 版 Python 3，並在預設 WSL Ubuntu 安裝工具鏈。Ubuntu 可直接安裝工具鏈。
 2. 在 Arduino IDE 的 **檔案 → 偏好設定 → 額外的板卡管理員網址** 加入以下網址。
-3. 開啟板卡管理員，搜尋 **RPiDuino** 並安裝 **0.1.0**。在 **工具 → 開發板 → RPiDuino** 選板，再從 **檔案 → 範例 → RPiDuino Basics** 開啟 Blink。
+3. 開啟板卡管理員，搜尋 **RPiDuino** 並安裝 **0.1.1**。在 **工具 → 開發板 → RPiDuino** 選板，再從 **檔案 → 範例 → RPiDuino Basics** 開啟 Blink。
 
     https://raw.githubusercontent.com/hypersolver/raspberry-pi-xdos/main/package_rpiduino_index.json
 
@@ -19,6 +19,14 @@ sudo apt install git make python3 gcc-arm-none-eabi libstdc++-arm-none-eabi-dev 
 ```
 
 首次編譯會將固定版本的 Circle 下載到 Linux 使用者快取。若已有該版本，也可在 Linux 建置環境設定 `RPIDUINO_CIRCLE_SOURCE` 指向本機 Git 儲存庫。
+
+## 透過 Pi 3/3B+ Debug UART 上傳
+
+用專用測試 microSD 啟動已啟用 UART 更新功能的 XDOS，鮑率為 921600，`config.txt` 需有單一生效的 `kernel=` 設定並使用 32 位元開機。原本的 XDOS 卡另行收好。Windows 在 IDE 使用的 Python 安裝 `python -m pip install pyserial`。
+
+使用 3.3 V USB–TTL。轉接器 RX 接 Pi 實體 pin 8，TX 接 pin 10，GND 接 pin 6，VCC 留空。Arduino IDE 選 **RPiDuino 3/3B+** 和轉接器的 COM 埠，關閉序列埠監視器，按 **上傳**。工具沿用 XDOS 的 `PUT`／`DATA`／`END` 傳檔及 CRC32 校驗，再執行 `BOOT`、`RESET`。新版 IMG 使用獨立檔名，測試卡上的原核心檔仍可用於回退。
+
+進入獨立 Blink 後，ACT LED 應亮、滅各 500 ms。此時 XDOS 更新服務已停止。若要再上傳，先關閉 Pi 電源，把測試卡上的 `xdosboot.bak` 複製回 `config.txt`，再開機回到 XDOS。
 
 ## 從 microSD 啟動
 
