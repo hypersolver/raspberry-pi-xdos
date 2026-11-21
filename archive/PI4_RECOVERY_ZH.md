@@ -12,3 +12,9 @@
 測試前先核對 [ZIP SHA-256](SHA256SUMS.txt)。如要重現歷史開機，先備份 microSD 的現有核心與 `config.txt`，再將映像放到含相容 Pi 開機韌體的 FAT 分割區，讓 `kernel=` 指向該檔並使用 ARM32 開機。這次復原未重新開機測試。
 
 原始資料夾的 Makefile 保留相對於 Circle 的編譯位置。兩版需要相容的 Circle ARM32／Pi 3 靜態庫，使用 Wi-Fi 時還需 WLAN 與相關韌體。這次沒有取得原發行 ZIP、完整依賴快照或可重現的原始編譯設定。
+
+## V0.4 與 V0.5.1 複查
+
+Pi 4 上的 `tcpconnection.cpp.xdos-v04.bak` 和 `transportlayer.cpp.xdos-v04.bak` 以 SHA-256 比對，分別與 Circle 提交 `7a81e1b480fe7d19fc1fc695b89bff0a0848f44b` 的同名原檔一致。現存工作樹相對於這兩個基線檔，加入約 5 秒的 TCP 握手逾時與失敗連線的清理。這能確認補丁的基線和功能。現有資料不足以將補丁對應到一份獨立的 V0.4 核心映像。
+
+Pi 4 的 XDOS 映像與 ELF 中，符合 V0.4 版本字串的候選只有同一個 V0.5 建置。它保留 V0.4 的 About 字串，但開機版本和 Makefile 均標示 V0.5。現存 XDOS 範例來源、ZIP 內容與映像中沒有找到可驗證為 V0.5.1 的檔案。

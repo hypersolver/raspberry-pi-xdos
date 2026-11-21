@@ -4,9 +4,9 @@
 
 | 版本 | 公開資料與狀態 |
 | --- | --- |
-| V0.4 | 有 Wi-Fi timeout 開發紀錄。舊 Pi 4 留有兩份網路程式備份，完整原始碼與可辨識的映像尚未找回。 |
+| V0.4 | 有 Wi-Fi timeout 開發紀錄。Pi 4 上標示 V0.4 的兩份備份與 Circle 上游原檔相同，可追溯補丁基線。尚未找到可驗證的 V0.4 建置或映像。 |
 | V0.5 | [從 Pi 4 找回的原始碼與核心映像](archive/XDOS-V0.5-Pi4-recovered.zip)。原發行 ZIP 尚未找回。 |
-| V0.5.1 | 有修正版檔名紀錄，原 ZIP 與可辨識的映像尚未找回。 |
+| V0.5.1 | 有修正版檔名紀錄。已複查 Pi 4 的 XDOS 原始碼、套件與映像，尚未找到可驗證的原檔。 |
 | V0.5.2 | [從 Pi 4 找回的原始碼與核心映像](archive/XDOS-V0.5.2-Pi4-recovered.zip)。原發行 ZIP 尚未找回。 |
 | V0.5.3 | [Desktop-first 原始碼](source/v0.5.3/) |
 | V0.5.4 | [FAT32 歷史套件](archive/XDOS_ARM32_ASM_V0.5_4_FAT32_RPi3B-sanitized.zip) |
