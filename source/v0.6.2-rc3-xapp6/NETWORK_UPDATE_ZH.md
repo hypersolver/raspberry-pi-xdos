@@ -1,5 +1,7 @@
 # XDOS 區網部署與回退
 
+目前公開版請依 [PXLAYOUT 指南](PXLAYOUT_ZH.md#既有-xdos-透過-ethernet-更新) 的檔名與命令操作。以下 HDBENCH 範例用於早期 HDMI Auto 測試版。各版本均須使用各自配對的核心和 XAPP。
+
 需要已安裝並支援 `FETCH`、`BOOT`、`RESET` 的 XDOS。將 Pi 3B+ 與電腦接到同一區網，再接 3.3 V UART。UART 傳送命令，檔案由 Pi 經 Ethernet 下載。首次安裝可把 Release 測試包解壓到已備妥 Raspberry Pi 開機韌體的 FAT 分割區，然後在 `config.txt` 的通用區段設定 `kernel=HDBENCH.IMG`，保留原 IMG 與設定備份。
 
 1. 下載同一個 Release 的 IMG、三個 XAPP 和 `SHA256SUMS.txt`。用 PowerShell 的 `Get-FileHash -Algorithm SHA256 <檔案>` 核對。

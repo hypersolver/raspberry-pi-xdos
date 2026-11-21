@@ -9,6 +9,9 @@ XDOS 是將 XD OS 移植到 Raspberry Pi 的 ARM32 裸機桌面系統。以 Circ
 | 需求 | 文件 |
 | --- | --- |
 | PXLAYOUT 實測、microSD 安裝、部署、播放器及回退 | [Pixel BBS Layout 指南](source/v0.6.2-rc3-xapp6/PXLAYOUT_ZH.md) |
+| 核心 ABI、XAPP API 與使用範例 | [XAPP API 與開發指南](source/v0.6.2-rc3-xapp6/XAPP_API_ZH.md) |
+| 近期實測、媒體實驗及限制 | [研發與驗證紀錄](source/v0.6.2-rc3-xapp6/DEVELOPMENT_ZH.md) |
+| IMG、靜態 RAM、XAPP 保留區及優化優先順序 | [核心區段盤點](source/v0.6.2-rc3-xapp6/CORE_SECTIONS_ZH.md) |
 | WSL2 建置、首次安裝到 microSD、桌面操作 | [XDOS 安裝與操作指南](source/v0.6.2-rc3-xapp6/OPERATIONS_ZH.md) |
 | 使用 Terminal、查詢效能、從 UART 啟動 XAPP | [Terminal Window 操作說明](source/v0.6.2-rc3-xapp6/TERMINAL_ZH.md) |
 | UART 指令、協定與新增指令 | [UART 指令參考](source/v0.6.2-rc3-xapp6/UART_ZH.md) |

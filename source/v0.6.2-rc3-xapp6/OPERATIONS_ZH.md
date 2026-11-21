@@ -6,6 +6,7 @@ XDOS 是 ARM32 裸機系統。準備 Pi 3B 或 3B+、microSD、HDMI 螢幕、USB
 
 | 版本 | 適用情境 | 驗證狀態 |
 | --- | --- | --- |
+| [PXLAYOUT](PXLAYOUT_ZH.md) | 目前公開預發行版。Pixel BBS 桌面、可縮放捷徑與 MP4 Player | Pi 3B+ 的 720p／1080p 桌面和九個捷徑已實測 |
 | [HDMI Auto](https://github.com/hypersolver/raspberry-pi-xdos/releases/tag/v0.6.2-rc3-xapp6-hdmi-auto) | 開機自動同步 HDMI、XDOS、LVGL 與 VC4 解析度 | Pi 3B+ 驗證 1080p 官方 Benchmark 上捲無殘影。720p 桌面已在 HDMI 模式驗證版通過。 |
 | [有線精簡版](https://github.com/hypersolver/raspberry-pi-xdos/releases/tag/v0.6.2-rc3-xapp6-wired) | 透過有線 Ethernet 使用 XDOS，核心不含內建 Wi-Fi | Pi 3B+ 已驗證 Browser、鍵鼠、FAT32 隨身碟與核心更新 |
 | [RC3 XAPP6 基準包](packages/XDOS_RC3_XAPP6_PI3_TEST.zip) | 首次安裝和確認硬體 | Pi 3B+ 已開機，官方 Widgets 和 Benchmark 可交替執行 |
