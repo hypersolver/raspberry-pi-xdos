@@ -21,7 +21,13 @@ The hardware decoder presented all 120 frames of the 320×240 H.264 clip and ret
 ## Troubleshooting
 
 - **Missing shortcut** — Verify the manifest and executable paths, the ten-shortcut limit, and reboot to rescan.
-- **Shortcuts appear after the background** — The background draws first. Shortcuts wait for the FAT32 mount, manifest scan and executable checks. The first boot after an Ethernet upgrade also imports missing manifests. Individual stage timings have yet to be measured.
+- **Shortcuts appear after the background** — The background draws first. Shortcuts wait for USB and SD initialization, the FAT32 mount, manifest scan and executable checks. See the timings below.
 - **MP4 has no sound** — The video player handles H.264 video. Use the MP3 Player for audio files.
 - **Stutter or VCHIQ warnings** — Try lower-resolution H.264 and record the UART playback counters.
 - **Incompatible XAPP** — Use the matched kernel and XAPPs from this release, and verify their checksums.
+
+## Icon startup experiment
+
+On the same Pi 3B+ and SD card, one reset per build measured the first icon draw at 5.981 s in the baseline and 5.620 s in ICONFAST, about 362 ms earlier. SD initialization took 1.536 s, FAT32 mount took under 1 ms, and the catalog scan took about 49 ms. These times use the kernel clock and software draw marker. The change runs SD initialization and catalog scanning before the deferred Ethernet PHY probe. Terminal opened and closed on ICONFAST. The published release remains the hardware-tested MCMEDNET build.
+
+For a diagnostic rebuild, run `tools/vc4/apply_icon_boot.py SAMPLE --fast --profile` on the generated MCMEDNET source tree, then rebuild and rebind its paired XAPPs. Omit `--profile` to disable timing output.
