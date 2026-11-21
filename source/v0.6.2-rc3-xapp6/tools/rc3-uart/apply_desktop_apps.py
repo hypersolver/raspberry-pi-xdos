@@ -36,9 +36,10 @@ def desktop_header(text):
 def desktop_source(text):
     start = text.index("    // Taskbar app buttons")
     end = text.index("\n}", start)
+    player = "PlayerApp" in text
     music = "MusicApp" in text
     text = text[:start] + """    for (unsigned i=0; i<discoveredCount_; ++i) {
-        const auto slot=PlaceDiscoveredApp(width_,height_,i,discoveredCount_);
+        const auto slot=PlaceDiscoveredApp(width_,height_,i);
         if (Contains(x,y,slot.x,slot.y,slot.width,slot.height)) {
             OpenDiscoveredApp(i);
             return;
@@ -71,8 +72,8 @@ void Desktop::OpenDiscoveredApp(unsigned index)
     case XdosAppKind::Browser: Open(Browser); break;
     case XdosAppKind::Widgets: appLaunchPending_=true; break;
     case XdosAppKind::Benchmark: officialBenchPending_=true; break;
-    case XdosAppKind::Player: workspacePending_=PlayerApp; break;
-""" + ("    case XdosAppKind::Music: workspacePending_=MusicApp; break;\n" if music else "") + """    default: discoveredPending_=index; break;
+""" + ("    case XdosAppKind::Player: workspacePending_=PlayerApp; break;\n" if player else "") + (
+        "    case XdosAppKind::Music: workspacePending_=MusicApp; break;\n" if music else "") + """    default: discoveredPending_=index; break;
     }
 }
 
@@ -81,7 +82,7 @@ void Desktop::DrawIcons()
     const int glyphScale=width_>=1280 && height_>=900 ? 2 : 1;
     constexpr unsigned maxLabelChars=16;
     for (unsigned i=0; i<discoveredCount_; ++i) {
-        const auto slot=PlaceDiscoveredApp(width_,height_,i,discoveredCount_);
+        const auto slot=PlaceDiscoveredApp(width_,height_,i);
         const auto &app=discoveredApps_[i];
         const char glyph[]={DesktopAppInitial(app.name),0};
         const int centerX=slot.x+slot.width/2;
@@ -90,9 +91,14 @@ void Desktop::DrawIcons()
         Frame(iconX,slot.y,slot.icon,slot.icon,0xC0D4EA);
         PixelText(centerX-4*glyphScale,slot.y+(slot.icon-16*glyphScale)/2,glyph,WHITE);
         const unsigned labelChars=strlen(app.name);
-        const int labelWidth=int(labelChars)*8*glyphScale;
-        if (labelChars<=maxLabelChars && labelWidth<=slot.width)
-            PixelText(centerX-labelWidth/2,slot.y+slot.icon+slot.gap,app.name,WHITE);
+        if (labelChars<=maxLabelChars) {
+            const int labelWidth=int(labelChars)*8;
+            const int labelY=slot.y+slot.icon+slot.gap;
+            if (labelWidth*glyphScale<=slot.width)
+                PixelText(centerX-labelWidth*glyphScale/2,labelY,app.name,WHITE);
+            else if (labelWidth<=slot.width)
+                Text(centerX-labelWidth/2,labelY,app.name,WHITE);
+        }
     }
 }
 
@@ -129,23 +135,25 @@ unsigned DesktopAppColor(char initial)
     return initial>='A' && initial<='Z' ? palette[initial-'A'] : 0x4B5566;
 }
 
-PixelBbs::Shortcut PlaceDiscoveredApp(int width,int height,unsigned index,unsigned count)
+PixelBbs::Shortcut PlaceDiscoveredApp(int width,int height,unsigned index)
 {
+    constexpr int columns=5;
+    constexpr int rows=2;
     const int reference=width*3/4<height ? width*3/4 : height;
     const int scale=reference<480 ? 480 : reference>1200 ? 1200 : reference;
     const int margin=20*scale/768;
+    const int spare=(width-columns*128)/2;
+    const int sideMargin=spare<0 ? 0 : spare<margin ? spare : margin;
     const int top=80+margin;
     const int icon=34*scale/768;
     const int gap=7*scale/768;
     const int textHeight=width>=1280 && height>=900 ? 32 : 16;
     const int cellHeight=icon+gap+textHeight;
-    const int pitch=cellHeight+9*scale/768;
-    const int available=1+(height-49-top-cellHeight)/pitch;
-    const unsigned rows=available>0 ? unsigned(available) : 1;
-    const unsigned columns=(count+rows-1)/rows;
-    const int columnWidth=(width-2*margin)/int(columns);
-    return {margin+int(index/rows)*columnWidth,top+int(index%rows)*pitch,
-            columnWidth-gap,cellHeight,icon,gap};
+    const int columnWidth=(width-2*sideMargin)/columns;
+    const int rowHeight=(height-49-top-margin)/rows;
+    const int x=sideMargin+int(index%columns)*columnWidth;
+    const int y=top+int(index/columns)*rowHeight+(rowHeight-cellHeight)/2;
+    return {x,y,columnWidth,cellHeight,icon,gap};
 }
 }
 """, 1)
