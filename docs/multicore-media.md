@@ -31,3 +31,11 @@ The hardware decoder presented all 120 frames of the 320×240 H.264 clip and ret
 On the same Pi 3B+ and SD card, one reset per build measured the first icon draw at 5.981 s in the baseline and 5.620 s in ICONFAST, about 362 ms earlier. SD initialization took 1.536 s, FAT32 mount took under 1 ms, and the catalog scan took about 49 ms. These times use the kernel clock and software draw marker. The change runs SD initialization and catalog scanning before the deferred Ethernet PHY probe. Terminal opened and closed on ICONFAST. The published release remains the hardware-tested MCMEDNET build.
 
 For a diagnostic rebuild, run `tools/vc4/apply_icon_boot.py SAMPLE --fast --profile` on the generated MCMEDNET source tree, then rebuild and rebind its paired XAPPs. Omit `--profile` to disable timing output.
+
+## SD polling and icon drawing order
+
+SDPRE checks SD card readiness every 20 ms while ACMD41 reports busy. ICONFAST waits 500 ms between checks. SDPRE draws the icons after FAT32 and the catalog are ready, then enumerates USB. Both drivers still initialize on the main core. [SD Association specification](https://www.sdcard.org/cms/wp-content/themes/sdcard-org/dl.php?f=Part1_Physical_Layer_Simplified_Specification_Ver7.10.pdf)
+
+On the same Pi 3B+, card and 1080p setup, one reset per build measured SD initialization at 1.536 s in ICONFAST and 0.096 s in SDPRE. Icon first draw advanced from 5.620 s to 1.478 s. USB readiness moved from 3.886 s to 4.186 s. UART confirmed mouse enumeration and opening and closing Terminal, Browser, Widgets and Benchmark. ICONFAST remains available for rollback.
+
+To reproduce SDPRE, apply `apply_icon_boot.py SAMPLE --fast --profile` followed by `apply_sd_icon_boot.py CIRCLE SAMPLE` in an isolated build tree. Rebuild the SDCard library and kernel, then rebind the paired XAPPs.

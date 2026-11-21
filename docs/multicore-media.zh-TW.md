@@ -48,3 +48,18 @@
 | 清單掃描與執行檔檢查 | 49.033 ms | 48.962 ms |
 
 圖示首繪提前約 362 ms。UART 已確認 ICONFAST 的 Terminal 可開啟及關閉。時間由核心計時器記錄，代表首次軟體繪製。ICONFAST 是獨立驗證版，正式 Release 仍為實測影音版 MCMEDNET。建置可對生成的 MCMEDNET 原始碼樹執行 `tools/vc4/apply_icon_boot.py SAMPLE --fast --profile`，再編譯及重新配對 XAPP。省略 `--profile` 可停用量測訊息。
+
+## SD 輪詢與首繪順序試驗
+
+Circle 的 SD 初始化在 ACMD41 回報仍忙碌時會等 500 ms 才重查。SDPRE 將 SD 輪詢間隔縮至 20 ms，保留命令流程與 Embedded MMC 的間隔。桌面背景首繪後，即初始化 SD、掛載 FAT32、掃描清單並繪製圖示，接著枚舉 USB。這輪仍使用原有主核心驅動流程。 [SD Association 規格](https://www.sdcard.org/cms/wp-content/themes/sdcard-org/dl.php?f=Part1_Physical_Layer_Simplified_Specification_Ver7.10.pdf)
+
+在同一台 Pi 3B+、同一張 SD 卡和 1080p 顯示下，以 Ethernet 部署並 RESET。以下為核心計時器的單次開機結果。
+
+| 指標 | ICONFAST | SDPRE |
+| --- | ---: | ---: |
+| 背景首繪 | 1.177 秒 | 1.187 秒 |
+| SD 初始化耗時 | 1.536 秒 | 0.096 秒 |
+| 圖示首繪 | 5.620 秒 | 1.478 秒 |
+| USB 就緒 | 3.886 秒 | 4.186 秒 |
+
+圖示提前 4.142 秒，USB 就緒晚約 300 ms。因此圖示會先出現，稍後才可用 USB 鍵鼠操作。UART 確認滑鼠枚舉，以及 Terminal、Browser、Widgets、Benchmark 均可開啟及關閉。使用 `apply_icon_boot.py SAMPLE --fast --profile` 後，可在隔離的 Circle 建置樹套用 `apply_sd_icon_boot.py CIRCLE SAMPLE`，重編 SDCard 程式庫與核心，再重新配對 XAPP。ICONFAST 可供回退。
