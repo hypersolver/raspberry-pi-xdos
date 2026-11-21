@@ -4,6 +4,14 @@
 
 XDOS 是將 XD OS 移植到 Raspberry Pi 的 ARM32 裸機桌面系統。以 Circle 提供硬體支援，使用 LVGL 繪製桌面，並從 microSD 載入外部 XAPP。近期版本以 Raspberry Pi 3B+ 為實機驗證平台，搭配 Windows WSL2 交叉編譯。
 
+## PXLAYOUT 畫面預覽
+
+以下 1920×1080 模擬預覽由發行版的繪圖程式在電腦上產生，狀態文字使用測試資料。
+
+| 開機畫面 | 桌面 |
+| --- | --- |
+| ![PXLAYOUT 開機畫面模擬預覽](docs/pxlayout/boot.png) | ![PXLAYOUT 桌面模擬預覽](docs/pxlayout/desktop.png) |
+
 ## 開發動機與架構
 
 專案從移植 XD OS 開始，探索如何用小型裸機核心提供互動桌面，並讓應用程式可以分開開發與替換。Pi 開機韌體載入 XDOS 核心，由 Circle 提供 SD、USB、網路和 UART，LVGL 負責桌面，XAPP Loader 透過 ARM32 API 啟動外部應用。顯示使用 VC4 EGL VSync，保留 framebuffer 回退。[系統架構圖](README.md#system-architecture)

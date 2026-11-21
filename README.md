@@ -4,6 +4,14 @@
 
 XDOS is an ARM32 bare-metal desktop for Raspberry Pi. Circle provides the hardware support, LVGL draws the desktop, and the system loads external XAPPs from microSD. The current public prerelease, PXLAYOUT, was tested on a Raspberry Pi 3B+ at 1280×720 and 1920×1080.
 
+## PXLAYOUT preview
+
+These 1920×1080 previews were rendered on a host using the release's drawing code and sample status text.
+
+| Boot splash | Desktop |
+| --- | --- |
+| ![Simulated PXLAYOUT boot splash](docs/pxlayout/boot.png) | ![Simulated PXLAYOUT desktop](docs/pxlayout/desktop.png) |
+
 ## Why XDOS
 
 XDOS started as a port of XD OS to Raspberry Pi. It explores how far a small bare-metal core can provide an interactive desktop, with applications developed and replaced independently. The project also serves as a test bed for boot timing, partial redraw and hardware-assisted display on the Pi 3B+.
