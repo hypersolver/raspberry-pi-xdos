@@ -130,8 +130,10 @@ def main():
     commands.add_parser("close", help="Close the current XDOS XAPP")
     open_app = commands.add_parser("open", help="Launch an XDOS desktop XAPP")
     open_app.add_argument("shortcut", type=str.upper, choices=(
-        "NOTEPAD", "CALCULATOR", "PAINT", "FILES", "BROWSER", "TERMINAL", "UPDATE", "WIDGETS", "BENCHMARK",
+        "NOTEPAD", "CALCULATOR", "PAINT", "FILES", "BROWSER", "TERMINAL", "UPDATE", "WIDGETS", "BENCHMARK", "PLAYER",
     ))
+    play = commands.add_parser("play", help="Play an H.264 MP4 from the Pi's SD card")
+    play.add_argument("path", help="SD:/ path or filename in SD:/XDOS/INBOX")
     commands.add_parser("boot-clear", help="Restore the previous boot configuration")
     upload = commands.add_parser("scp", help="Copy a file into SD:/XDOS/INBOX/")
     upload.add_argument("file", type=Path)
@@ -149,6 +151,11 @@ def main():
         boot.add_argument("file", type=Path, help="Local image used for CRC32 verification")
         boot.add_argument("--name", required=True, help="Target filename, e.g. UART5.IMG")
     args = parser.parse_args()
+    if args.command == "play" and (
+        not 0 < len(args.path) <= 191 or not args.path.isascii() or
+        any(ord(char) < 32 or ord(char) == 127 for char in args.path)
+    ):
+        parser.error("Use an ASCII SD path up to 191 characters.")
     if args.command in ("scp", "net-scp", "boot", "deploy"):
         name = args.name or args.file.name
         if not re.fullmatch(r"[A-Za-z0-9_-][A-Za-z0-9_.-]{0,31}", name):
@@ -190,6 +197,9 @@ def main():
         elif args.command == "open":
             exchange(port, f"OPEN {args.shortcut}", "@XDOS OPENED @XDOS OK", timeout=15)
             print(f"Opened {args.shortcut}.")
+        elif args.command == "play":
+            exchange(port, f"PLAY {args.path}", "@XDOS PLAYING")
+            print(f"Playback accepted for {args.path}.")
         elif args.command == "reset":
             exchange(port, "RESET", "@XDOS RESETTING")
             print("Reset acknowledged.")

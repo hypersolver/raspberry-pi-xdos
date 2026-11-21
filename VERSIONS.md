@@ -21,6 +21,7 @@
 | Wired | [Release](https://github.com/hypersolver/raspberry-pi-xdos/releases/tag/v0.6.2-rc3-xapp6-wired)。有線精簡核心。 |
 | HDMI Auto | [Release](https://github.com/hypersolver/raspberry-pi-xdos/releases/tag/v0.6.2-rc3-xapp6-hdmi-auto)。解析度同步、視窗動畫和 1080p 捲動保護。 |
 | Terminal Window | [Release](https://github.com/hypersolver/raspberry-pi-xdos/releases/tag/v0.6.2-rc3-xapp6-terminal-window)。外部 Terminal XAPP、共用 UART 指令表。 |
+| PXLAYOUT | [Release](https://github.com/hypersolver/raspberry-pi-xdos/releases/tag/v0.6.2-rc3-xapp6-pxlayout) · [操作與實測](source/v0.6.2-rc3-xapp6/PXLAYOUT_ZH.md)。Pi 3B+ 的 720p、1080p 自適應版面及滑鼠捷徑均通過。 |
 
 歷史 ZIP 已移除或改用範例值處理本機路徑與 Wi-Fi 設定。[歷史 ZIP 校驗表](archive/SHA256SUMS.txt)
 

@@ -2,12 +2,13 @@
 
 XDOS 是將 XD OS 移植到 Raspberry Pi 的 ARM32 裸機桌面系統。以 Circle 提供硬體支援，使用 LVGL 繪製桌面，並從 microSD 載入外部 XAPP。近期版本以 Raspberry Pi 3B+ 為實機驗證平台，搭配 Windows WSL2 交叉編譯。
 
-**目前的預發行版是 Terminal Window。** Release 提供核心 IMG、配對的 Terminal、Browser、LVGL Widgets 和 Benchmark XAPP、完整 SD 測試包及 SHA-256。既有 XDOS 可用 UART 控制 Ethernet 下載、切換開機與回退。 [下載 Terminal Window](https://github.com/hypersolver/raspberry-pi-xdos/releases/tag/v0.6.2-rc3-xapp6-terminal-window)
+**目前的預發行版是 Pixel BBS Layout。** Pi 3B+ 已在 720p 和 1080p 驗證自適應圖示、文字、間距及九個捷徑。Release 提供核心 IMG、配對 XAPP、原始碼快照與 SHA-256。 [下載 PXLAYOUT](https://github.com/hypersolver/raspberry-pi-xdos/releases/tag/v0.6.2-rc3-xapp6-pxlayout)
 
 ## 開始使用
 
 | 需求 | 文件 |
 | --- | --- |
+| PXLAYOUT 實測、microSD 安裝、部署、播放器及回退 | [Pixel BBS Layout 指南](source/v0.6.2-rc3-xapp6/PXLAYOUT_ZH.md) |
 | WSL2 建置、首次安裝到 microSD、桌面操作 | [XDOS 安裝與操作指南](source/v0.6.2-rc3-xapp6/OPERATIONS_ZH.md) |
 | 使用 Terminal、查詢效能、從 UART 啟動 XAPP | [Terminal Window 操作說明](source/v0.6.2-rc3-xapp6/TERMINAL_ZH.md) |
 | UART 指令、協定與新增指令 | [UART 指令參考](source/v0.6.2-rc3-xapp6/UART_ZH.md) |
@@ -26,6 +27,7 @@ XDOS 是將 XD OS 移植到 Raspberry Pi 的 ARM32 裸機桌面系統。以 Circ
 | AppWindows、BrowserText、Wired · 核心精簡 | 桌面工具改成視窗版 XAPP，補齊文字鍵，將 Browser HTTP 和 HTML 轉文字移到 XAPP。核心保留區網更新，有線版移除內建 Wi-Fi。 |
 | HDMI Auto · 解析度與顯示 | 讓 framebuffer、XDOS、LVGL 和 VC4 使用同一尺寸。720p 桌面已驗證。1080p 的官方 Benchmark 圖形上捲修正版已確認無殘影，EGL VSync 保持啟用。 |
 | Terminal Window · 共用指令 | Terminal 可用桌面捷徑或 UART 啟動，沿用視窗縮放動畫和 CPU 顯示。Terminal 與 UART 共用核心指令表。 |
+| Pixel BBS Layout · 自適應桌面 | 開機進度條和桌面共用 8×8 顆粒主題。Pi 3B+ 的 720p 與 1080p 各完成九個圖示及九個名稱的滑鼠啟動測試。 |
 
 版本細節、歷史檔案與驗證狀態見 [版本總覽](VERSIONS.md)、[早期版本復原紀錄](archive/PI4_RECOVERY_ZH.md) 和 [HDMI Auto 實測說明](source/v0.6.2-rc3-xapp6/HDMI_AUTO_ZH.md)。早期 V0.1–V0.3 建置與開機方式見 [歷史操作手冊](OPERATIONS.md)。
 

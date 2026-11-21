@@ -10,7 +10,7 @@ import sys
 import zlib
 
 
-phase, kit, circle = sys.argv[1:]
+phase, kit, circle, *sample = sys.argv[1:]
 kit, circle = Path(kit), Path(circle)
 tools = Path(__file__).resolve().parent
 project = tools.parents[1]
@@ -174,7 +174,7 @@ void lv_demo_benchmark_set_end_cb("""
 
 
 def finish():
-    kernel = circle / "sample/103-xdos-pi3-usb-msc/kernel8-32.elf"
+    kernel = Path(sample[0]) if sample else circle / "sample/103-xdos-pi3-usb-msc/kernel8-32.elf"
     raw = (kit / "output/xdos32-v062-rc3-pi3.img").read_bytes()
     symbols = {}
     for line in run("arm-none-eabi-nm", "-g", "--defined-only", kernel,
