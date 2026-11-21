@@ -1,0 +1,40 @@
+{
+  "packages": [
+    {
+      "name": "rpiduino",
+      "maintainer": "RPiDuino contributors",
+      "websiteURL": "https://github.com/hypersolver/raspberry-pi-xdos",
+      "help": {
+        "online": "https://github.com/hypersolver/raspberry-pi-xdos/tree/main/Arduino%20SDK"
+      },
+      "platforms": [
+        {
+          "name": "RPiDuino",
+          "architecture": "bcm",
+          "version": "0.1.0",
+          "category": "Contributed",
+          "url": "https://raw.githubusercontent.com/hypersolver/raspberry-pi-xdos/main/Arduino%20SDK/packages/rpiduino-bcm-0.1.0.zip",
+          "archiveFileName": "rpiduino-bcm-0.1.0.zip",
+          "checksum": "SHA-256:f6ad112e5f8114e446a998625158013edf28586feeef87cbd27eab1100d900ce",
+          "size": "5101",
+          "boards": [
+            {
+              "name": "RPiDuino 2"
+            },
+            {
+              "name": "RPiDuino 3/3B+"
+            },
+            {
+              "name": "RPiDuino 4"
+            },
+            {
+              "name": "RPiDuino 5"
+            }
+          ],
+          "toolsDependencies": []
+        }
+      ],
+      "tools": []
+    }
+  ]
+}

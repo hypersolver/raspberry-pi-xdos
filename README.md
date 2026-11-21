@@ -4,6 +4,10 @@
 
 XDOS is an ARM32 bare-metal desktop for Raspberry Pi. Circle provides the hardware support, LVGL draws the desktop, and the system loads external XAPPs from microSD. The current public prerelease, PXLAYOUT, was tested on a Raspberry Pi 3B+ at 1280×720 and 1920×1080.
 
+## RPiDuino Arduino SDK
+
+Install RPiDuino in Arduino Boards Manager to build standalone sketches for Pi 2, Pi 3/3B+, Pi 4 and Pi 5. [Setup and microSD boot guide](Arduino%20SDK/README.md) · [Boards Manager index URL](https://raw.githubusercontent.com/hypersolver/raspberry-pi-xdos/main/package_rpiduino_index.json)
+
 ## PXLAYOUT preview
 
 These 1920×1080 previews were rendered on a host using the release's drawing code and sample status text.

@@ -1,0 +1,21 @@
+name=RPiDuino
+version=0.1.0
+rpiduino.python=python3
+rpiduino.python.windows=python
+rpiduino.tool="{rpiduino.python}" "{runtime.platform.path}/tools/build.py" {build.model} {build.bits} {build.cpu}
+compiler.warning_flags=
+compiler.warning_flags.none=
+compiler.warning_flags.default=
+compiler.warning_flags.more=-Wall
+compiler.warning_flags.all=-Wall -Wextra
+compiler.common=-Os -ffreestanding -ffunction-sections -fdata-sections -DARDUINO={runtime.ide.version} -DARDUINO_{build.board} -DARDUINO_ARCH_BCM
+compiler.cpp=-std=gnu++17 -fno-exceptions -fno-rtti
+recipe.cpp.o.pattern={rpiduino.tool} cxx -MMD -c {compiler.common} {compiler.cpp} {compiler.warning_flags} {includes} "{source_file}" -o "{object_file}"
+recipe.c.o.pattern={rpiduino.tool} cc -MMD -c {compiler.common} {compiler.warning_flags} {includes} "{source_file}" -o "{object_file}"
+recipe.S.o.pattern={rpiduino.tool} cc -x assembler-with-cpp -MMD -c {compiler.common} {includes} "{source_file}" -o "{object_file}"
+recipe.preproc.macros={rpiduino.tool} cxx -x c++ -E -CC {compiler.common} {compiler.cpp} {includes} "{source_file}" -o "{preprocessed_file_path}"
+recipe.ar.pattern={rpiduino.tool} ar "{archive_file_path}" "{object_file}"
+recipe.c.combine.pattern={rpiduino.tool} link "{build.path}/{build.project_name}.elf" "{archive_file_path}" {object_files}
+recipe.objcopy.img.pattern={rpiduino.tool} image "{build.path}/{build.project_name}.elf" "{build.path}/{build.project_name}.img"
+recipe.output.tmp_file={build.project_name}.img
+recipe.output.save_file={build.project_name}.{build.board}.img

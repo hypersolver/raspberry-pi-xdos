@@ -4,6 +4,10 @@
 
 XDOS 是將 XD OS 移植到 Raspberry Pi 的 ARM32 裸機桌面系統。以 Circle 提供硬體支援，使用 LVGL 繪製桌面，並從 microSD 載入外部 XAPP。近期版本以 Raspberry Pi 3B+ 為實機驗證平台，搭配 Windows WSL2 交叉編譯。
 
+## RPiDuino Arduino SDK
+
+在 Arduino 板卡管理員安裝 RPiDuino，即可為 Pi 2、Pi 3/3B+、Pi 4 和 Pi 5 編譯獨立執行的 Arduino 草稿。[安裝與 microSD 開機說明](Arduino%20SDK/README.zh-TW.md) · [板卡管理員索引網址](https://raw.githubusercontent.com/hypersolver/raspberry-pi-xdos/main/package_rpiduino_index.json)
+
 ## PXLAYOUT 畫面預覽
 
 以下 1920×1080 模擬預覽由發行版的繪圖程式在電腦上產生，狀態文字使用測試資料。

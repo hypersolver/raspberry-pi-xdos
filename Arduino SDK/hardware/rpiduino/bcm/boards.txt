@@ -1,0 +1,27 @@
+rpiduino2.name=RPiDuino 2
+rpiduino2.build.board=RPIDUINO_2
+rpiduino2.build.core=rpiduino
+rpiduino2.build.model=2
+rpiduino2.build.bits=32
+rpiduino2.build.cpu=cortex-a7
+
+rpiduino3.name=RPiDuino 3/3B+
+rpiduino3.build.board=RPIDUINO_3
+rpiduino3.build.core=rpiduino
+rpiduino3.build.model=3
+rpiduino3.build.bits=32
+rpiduino3.build.cpu=cortex-a53
+
+rpiduino4.name=RPiDuino 4
+rpiduino4.build.board=RPIDUINO_4
+rpiduino4.build.core=rpiduino
+rpiduino4.build.model=4
+rpiduino4.build.bits=64
+rpiduino4.build.cpu=cortex-a72
+
+rpiduino5.name=RPiDuino 5
+rpiduino5.build.board=RPIDUINO_5
+rpiduino5.build.core=rpiduino
+rpiduino5.build.model=5
+rpiduino5.build.bits=64
+rpiduino5.build.cpu=cortex-a76
