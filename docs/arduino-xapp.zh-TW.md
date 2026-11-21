@@ -52,7 +52,26 @@ python tools/xdos-uart.py --port SERIAL_PORT --baud 921600 open WIDGETS
 
 ## Arduino IDE「上傳」目前的範圍
 
-RPiDuino 0.1.2 在 IDE 的「上傳」仍用於獨立 IMG。XDOS XAPP 目前使用本篇的 WSL 建置與既有 XDOS 部署工具。統一成 IDE 內的 **XDOS XAPP → 上傳**，以及直接安裝任意新捷徑，仍待板卡建置配方與 XDOS Loader 整合。這篇的可執行範例適用已配對的 Pi 3B+ XDOS 核心。
+RPiDuino 0.1.2 在 IDE 的「上傳」仍用於獨立 IMG。XDOS XAPP 目前使用本篇的 WSL 建置與既有 XDOS 部署工具。統一成 IDE 內的 **XDOS XAPP → 上傳**，仍待板卡建置配方與 XDOS 部署流程整合。這篇的可執行範例適用已配對的 Pi 3B+ XDOS 核心。
+
+## 動態桌面捷徑
+
+使用新版 `build_player.sh` 建置的核心會在 FAT32 掛載後掃描 `SD:/XDOS/APPS/`，依 FAT 目錄讀取順序收錄前 **10** 個符合格式且找得到執行檔的 `.APP` 檔案。壞清單、子目錄和找不到執行檔的項目會跳過。超過上限的項目保留在卡上。變更清單後重新開機即可重新掃描。
+
+圖示使用 `Name=` 中第一個英文字母，統一顯示大寫。A–Z 各對應一種固定顏色，常見首字母採用較容易彼此分辨的色相。名稱沒有英文字母時顯示灰底 `?`。
+
+Arduino XAPP 的清單範例：
+
+```ini
+[Application]
+Name=Arduino Demo
+Exec=SD:/XDOS/APPS/ARDDEMO.XAPP
+ABI=1
+Arch=armv7-a32
+Type=Arduino
+```
+
+把上述內容存為 `ARDDEMO.APP`，並將配對的 `ARDDEMO.XAPP` 放入 `XDOS/APPS/`。點擊圖示或名稱即可交給載入器。載入器在啟動時會核對 XAPP 的 ABI 和核心指紋。既有 PXLAYOUT Release 使用固定捷徑。
 
 ## 影音範例 XappMedia
 

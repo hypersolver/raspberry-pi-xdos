@@ -19,6 +19,9 @@ cp -a "$kit/output/arduino-demos" "$player_kit/output/"
 ln -s "$sample" "$player_kit/source/95-xdos-arm32-dualnet"
 python3 "$project/tools/vc4/apply_player.py" "$sample" "$deps"
 python3 "$module_tools/apply_pixel_bbs.py" "$sample"
+if [[ ${XDOS_DESKTOP_APPS:-1} == 1 ]]; then
+    python3 "$module_tools/apply_desktop_apps.py" "$sample"
+fi
 sed -i "s@/INBOX/F8@/INBOX/$prefix@g" "$sample/app_shortcut.cpp"
 make -C "$sample" -j4 XDOS_BUFFER_ROWS=128
 
@@ -43,3 +46,20 @@ cp "$player_kit/output/LVGLBENCH.XAPP" "$output/${prefix}BENCH.XAPP"
 cp "$player_kit/output/BROWSER.XAPP" "$output/${prefix}BROWSE.XAPP"
 cp "$player_kit/output/TERMINAL.XAPP" "$output/${prefix}TERM.XAPP"
 (cd "$output"; sha256sum VC4PLAY.IMG PLAYER.XAPP "$prefix"*.XAPP > SHA256SUMS.txt; sha256sum -c SHA256SUMS.txt)
+
+if [[ ${XDOS_DESKTOP_APPS:-1} == 1 ]]; then
+    apps="$output/XDOS/APPS"
+    inbox="$output/XDOS/INBOX"
+    mkdir -p "$apps" "$inbox"
+    # The fixed shortcuts still use their specialized host APIs.
+    for app in NOTE CALC PAINT FILES; do
+        cp "$kit/output/$app.APP" "$kit/output/$app.XAPP" "$apps/"
+    done
+    for app in LVGLDEMO LVGLBENCH BROWSER TERMINAL; do
+        cp "$player_kit/output/$app.APP" "$player_kit/output/$app.XAPP" "$apps/"
+    done
+    printf '[Application]\nName=MP4 Player\nExec=SD:/XDOS/INBOX/PLAYER.XAPP\nABI=1\nArch=armv7-a32\n' > "$apps/PLAYER.APP"
+    cp "$output/PLAYER.XAPP" "$output/${prefix}WIDGET.XAPP" "$output/${prefix}BENCH.XAPP" \
+       "$output/${prefix}BROWSE.XAPP" "$output/${prefix}TERM.XAPP" "$inbox/"
+    (cd "$output"; find XDOS -type f -print0 | sort -z | xargs -0 sha256sum >> SHA256SUMS.txt; sha256sum -c SHA256SUMS.txt)
+fi
