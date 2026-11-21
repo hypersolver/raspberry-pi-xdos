@@ -32,3 +32,13 @@ Keep `ICONFAST.IMG` and its `IF*.XAPP` modules. When ICONFAST was the previously
 - **An app is missing** — Check `XDOS/APPS/`, the manifest's executable path and the ten-shortcut limit. Reboot after editing the catalog.
 - **An app reports a compatibility error** — Verify the IMG and matching XAPP names and checksums.
 - **MP4 stutters or logs VCHIQ warnings** — The prior Media playback test completed but logged warnings. Playback smoothness was outside the SDPRE acceptance test. [MCMEDIA playback notes](multicore-media.md)
+
+## USB and SD boot overlap experiment
+
+USBOV2 preserved 170 ms of root-port waits, 1,020 ms across two hub power waits, and 400 ms across four hub port reset waits. The rest of USB initialization was not broken down further. The initial experiment stopped when a background task called VC4 rendering. USBOV2 prepares storage in the background and renders on the main task.
+
+On the same Pi 3B+, icon first draw moved from 1.478 s to 2.297 s and USB readiness from 4.186 s to 4.316 s. The mouse and keyboard attached at about 4.317 s in USBOV2. Terminal, Browser, Widgets and Benchmark opened and closed over UART. PWRMENU retains SDPRE's initialization order. In its boot test, icons drew at 1.494 s and USB was ready at 4.448 s.
+
+## PWRMENU power menu
+
+Click **XDOS** at the bottom left to open the upward menu. Choose **Restart** or **Shut Down**, or press the underlined **R** or **S** while the menu is open. Press Esc or click outside to dismiss it. Active storage writes or update transfers block power actions. On Pi 3B+, shutdown halts the system and the external power remains connected.

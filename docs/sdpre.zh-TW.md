@@ -32,3 +32,23 @@ SDPRE 將 SD 卡忙碌時的 ACMD41 查詢間隔從 500 ms 縮至 20 ms，並在
 - **少了圖示**：檢查 `XDOS/APPS/` 的清單、執行檔路徑及十個捷徑上限。清單變更後重開機。
 - **XAPP 不相容**：核對同版核心、配對 XAPP 檔名及 SHA-256。
 - **MP4 卡頓或出現 VCHIQ 警告**：先前 MCMEDIA 實測可播放，但仍有警告。本輪 SDPRE 驗收未重新量測影音流暢度。 [MCMEDIA 影音紀錄](multicore-media.zh-TW.md)
+
+## USB 與 SD 交錯初始化試驗
+
+SDPRE 約 2.708 秒的 USB 初始化包含主控啟動、Root Port 等待、Hub 供電穩定、各連接埠重置和裝置枚舉。USBOV2 的 UART 記錄到固定等待共 1,590 ms，包括 Root Port 170 ms、兩次 Hub 供電等待合計 1,020 ms，以及四次 Hub 連接埠重置後等待合計 400 ms。其餘時間未逐項分解。
+
+第一次交錯試驗在背景任務呼叫 VC4 繪圖時停止。經 SD 卡還原 SDPRE 後，USBOV2 只在背景準備 SD 與清單，繪圖回到主工作。在同一台 Pi 3B+ 上各次 RESET 的核心計時如下。
+
+| 指標 | SDPRE | USBOV2 |
+| --- | ---: | ---: |
+| 圖示首繪 | 1.478 秒 | 2.297 秒 |
+| USB 就緒 | 4.186 秒 | 4.316 秒 |
+| 滑鼠掛接 | 4.187 秒 | 4.317 秒 |
+
+USBOV2 約 4.316 秒也掛接了鍵盤。UART 確認 Terminal、Browser、Widgets、Benchmark 都可開關。因圖示首繪與 USB 就緒均較晚，PWRMENU 版沿用 SDPRE 的初始化順序。
+
+## PWRMENU 電源選單
+
+在 PWRMENU 試驗版，點桌面左下角 **XDOS** 打開向上彈出的選單。可點 **Restart** 或 **Shut Down**，也可在選單開啟時按底線對應的 **R** 或 **S**。按 Esc 或點選單外可關閉。寫入 SD 或接收更新時會拒絕電源操作。Pi 3B+ 的 **Shut Down** 會停止系統，板子仍由外部電源供電。
+
+PWRMENU 已透過 Ethernet 部署並 RESET。該次圖示首繪為 1.494 秒，USB 就緒為 4.448 秒。UART 確認鍵鼠掛接及 Terminal 開關。
