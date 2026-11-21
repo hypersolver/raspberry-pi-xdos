@@ -4,8 +4,10 @@
 
 | 版本 | 公開資料與狀態 |
 | --- | --- |
-| V0.4 | 有 Wi-Fi timeout 版的歷史紀錄。原 ZIP 與可驗證的映像尚未找回。 |
-| V0.5、V0.5.1、V0.5.2 | 有開機、Ethernet／Wi-Fi 調整的版本紀錄，原套件尚未找回。 |
+| V0.4 | 有 Wi-Fi timeout 開發紀錄。舊 Pi 4 留有兩份網路程式備份，完整原始碼與可辨識的映像尚未找回。 |
+| V0.5 | [從 Pi 4 找回的原始碼與核心映像](archive/XDOS-V0.5-Pi4-recovered.zip)。原發行 ZIP 尚未找回。 |
+| V0.5.1 | 有修正版檔名紀錄，原 ZIP 與可辨識的映像尚未找回。 |
+| V0.5.2 | [從 Pi 4 找回的原始碼與核心映像](archive/XDOS-V0.5.2-Pi4-recovered.zip)。原發行 ZIP 尚未找回。 |
 | V0.5.3 | [Desktop-first 原始碼](source/v0.5.3/) |
 | V0.5.4 | [FAT32 歷史套件](archive/XDOS_ARM32_ASM_V0.5_4_FAT32_RPi3B-sanitized.zip) |
 | V0.6.1 | [LVGL 效能歷史套件](archive/XDOS_ARM32_V0.6.1_LVGL_PERF_MULTI_RPI-sanitized.zip) |
@@ -21,3 +23,5 @@
 | Terminal Window | [Release](https://github.com/hypersolver/raspberry-pi-xdos/releases/tag/v0.6.2-rc3-xapp6-terminal-window)。外部 Terminal XAPP、共用 UART 指令表。 |
 
 歷史 ZIP 已移除或改用範例值處理本機路徑與 Wi-Fi 設定。[歷史 ZIP 校驗表](archive/SHA256SUMS.txt)
+
+V0.5 和 V0.5.2 的來源辨識、核心雜湊與使用方式見[早期版本復原紀錄](archive/PI4_RECOVERY_ZH.md)。
