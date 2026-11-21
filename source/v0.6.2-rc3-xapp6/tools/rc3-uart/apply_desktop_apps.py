@@ -79,19 +79,20 @@ void Desktop::OpenDiscoveredApp(unsigned index)
 void Desktop::DrawIcons()
 {
     const int glyphScale=width_>=1280 && height_>=900 ? 2 : 1;
+    constexpr unsigned maxLabelChars=16;
     for (unsigned i=0; i<discoveredCount_; ++i) {
         const auto slot=PlaceDiscoveredApp(width_,height_,i,discoveredCount_);
         const auto &app=discoveredApps_[i];
         const char glyph[]={DesktopAppInitial(app.name),0};
-        char label[sizeof app.name];
-        unsigned n=0;
-        for (; app.name[n] && (n+1)*8*glyphScale<=unsigned(slot.width); ++n)
-            label[n]=app.name[n];
-        label[n]=0;
-        Fill(slot.x,slot.y,slot.icon,slot.icon,DesktopAppColor(glyph[0]));
-        Frame(slot.x,slot.y,slot.icon,slot.icon,0xC0D4EA);
-        PixelText(slot.x+(slot.icon-8*glyphScale)/2,slot.y+(slot.icon-16*glyphScale)/2,glyph,WHITE);
-        PixelText(slot.x,slot.y+slot.icon+slot.gap,label,WHITE);
+        const int centerX=slot.x+slot.width/2;
+        const int iconX=centerX-slot.icon/2;
+        Fill(iconX,slot.y,slot.icon,slot.icon,DesktopAppColor(glyph[0]));
+        Frame(iconX,slot.y,slot.icon,slot.icon,0xC0D4EA);
+        PixelText(centerX-4*glyphScale,slot.y+(slot.icon-16*glyphScale)/2,glyph,WHITE);
+        const unsigned labelChars=strlen(app.name);
+        const int labelWidth=int(labelChars)*8*glyphScale;
+        if (labelChars<=maxLabelChars && labelWidth<=slot.width)
+            PixelText(centerX-labelWidth/2,slot.y+slot.icon+slot.gap,app.name,WHITE);
     }
 }
 
