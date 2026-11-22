@@ -38,3 +38,7 @@ Pi 3B+ 已驗證外部 Files V2 與 Notepad 並行。詳見[變更、操作及�
 ## FVMEDIA
 
 [變更、操作與 Pi 3B+ 實測紀錄](FVMEDIA_ZH.md)。
+
+## FVMNET2
+
+[自適應有線網路變更、操作與 Pi 3B+ 實測](FVMNET2_ZH.md)。

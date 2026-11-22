@@ -35,3 +35,7 @@ External Files V2 and Notepad ran concurrently on Pi 3B+. See [changes, operatio
 ## FVMEDIA
 
 [Changes, operation and Pi 3B+ test record](FVMEDIA_EN.md).
+
+## FVMNET2
+
+[Adaptive Ethernet changes, operation and Pi 3B+ measurements](FVMNET2_EN.md).
