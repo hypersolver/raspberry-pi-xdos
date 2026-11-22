@@ -970,7 +970,12 @@ struct FileBrowser {
     unsigned count;
     char history[FileHistorySize][512];
     char deleteTarget[512];
+    char launchTarget[512];
+    uint32_t launchClickTick;
+    lv_obj_t *selectedRow;
 };
+FileBrowser *activeFileBrowser;
+
 struct FileTreeNode {
     XDOSLVGL *ui;
     lv_obj_t *preview;
@@ -1033,6 +1038,24 @@ void PreviewTreeFile(FileTreeNode &node)
 }
 }
 
+extern "C" bool xdos_files_wheel(int x, int y, int delta)
+{
+    if (!activeFileBrowser) return false;
+    lv_obj_t *const panes[] = {activeFileBrowser->list, activeFileBrowser->tree};
+    for (auto *pane : panes) {
+        if (!pane || lv_obj_get_screen(pane) != lv_screen_active()) continue;
+        lv_area_t bounds;
+        lv_obj_get_coords(pane, &bounds);
+        if (x < bounds.x1 || x > bounds.x2 || y < bounds.y1 || y > bounds.y2) continue;
+        const int top = lv_obj_get_scroll_top(pane);
+        const int bottom = lv_obj_get_scroll_bottom(pane);
+        const int position = LV_CLAMP(0, top - delta, LV_MAX(0, top + bottom));
+        lv_obj_scroll_to_y(pane, position, LV_ANIM_OFF);
+        return true;
+    }
+    return false;
+}
+
 const char *XDOSLVGL::TakeFileTreeLaunch()
 {
     if (!fileTreeLaunchPending_) return nullptr;
@@ -1053,6 +1076,8 @@ void XDOSLVGL::AddFileTreeNode(lv_obj_t *parent,lv_obj_t *preview,XDOSLVGL *ui,
     lv_obj_set_size(group,lv_pct(100),LV_SIZE_CONTENT);
     auto *button=lv_button_create(group);
     StyleWindowSurface(button,0x294A6A,0xFFFFFF,0xB6C4D3,1);
+    lv_obj_set_style_bg_color(button,lv_color_hex(0xFFFFFF),LV_STATE_CHECKED);
+    lv_obj_set_style_text_color(button,lv_color_hex(0x203047),LV_STATE_CHECKED);
     lv_obj_set_style_pad_all(button,4,0);
     lv_obj_set_size(button,lv_pct(100),27);
     auto *name=lv_label_create(button);
@@ -1064,6 +1089,7 @@ void XDOSLVGL::AddFileTreeNode(lv_obj_t *parent,lv_obj_t *preview,XDOSLVGL *ui,
     if (!directory) lv_obj_add_event_cb(button,[](lv_event_t *event) {
         auto &item = *static_cast<FileTreeNode *>(lv_event_get_user_data(event));
         auto &browser = *static_cast<FileBrowser *>(lv_obj_get_user_data(item.preview));
+        browser.launchTarget[0] = 0;
         strcpy(browser.deleteTarget, item.path);
         lv_textarea_set_text(item.preview, "Confirm deletion with Delete:\n");
         lv_textarea_add_text(item.preview, item.path);
@@ -1079,13 +1105,29 @@ void XDOSLVGL::FileTreeClick(lv_event_t *event)
     auto *browser=static_cast<FileBrowser *>(lv_obj_get_user_data(node.preview));
     browser->deleteTarget[0] = 0;
     if (!node.directory) {
+        if (browser->selectedRow)
+            lv_obj_remove_state(browser->selectedRow, LV_STATE_CHECKED);
+        browser->selectedRow = lv_event_get_target_obj(event);
+        lv_obj_add_state(browser->selectedRow, LV_STATE_CHECKED);
         const size_t size=strlen(node.path);
         if (size>5 && !strcasecmp(node.path+size-5,".XAPP")) {
+            constexpr uint32_t doubleClickMs = 400;
+            const bool doubleClick = !strcmp(browser->launchTarget, node.path)
+                && lv_tick_elaps(browser->launchClickTick) <= doubleClickMs;
+            if (!doubleClick) {
+                strcpy(browser->launchTarget, node.path);
+                browser->launchClickTick = lv_tick_get();
+                lv_textarea_set_text(node.preview,"Double-click to run:\n");
+                lv_textarea_add_text(node.preview,node.path);
+                return;
+            }
+            browser->launchTarget[0] = 0;
             if (node.ui->windowClosing_) return;
             strcpy(node.ui->fileTreeLaunch_,node.path);
             node.ui->fileTreeLaunchPending_=true;
             node.ui->CloseCurrentApp();
         } else {
+            browser->launchTarget[0] = 0;
             PreviewTreeFile(node);
         }
         return;
@@ -1133,6 +1175,9 @@ void XDOSLVGL::RenderFiles(void *context)
 {
     auto &browser=*static_cast<FileBrowser *>(context);
     browser.deleteTarget[0] = 0;
+    browser.launchTarget[0] = 0;
+    if (browser.selectedRow) lv_obj_remove_state(browser.selectedRow, LV_STATE_CHECKED);
+    browser.selectedRow = nullptr;
     const char *path=browser.history[browser.position];
     lv_label_set_text(browser.address,path);
     lv_obj_clean(browser.list);
@@ -1187,8 +1232,11 @@ void XDOSLVGL::OpenFileTree(lv_obj_t *body)
     auto *browser=new FileBrowser{};
     if (!browser) return;
     browser->ui=this;
+    activeFileBrowser = browser;
     lv_obj_add_event_cb(body,[](lv_event_t *event) {
-        delete static_cast<FileBrowser *>(lv_event_get_user_data(event));
+        auto *browser = static_cast<FileBrowser *>(lv_event_get_user_data(event));
+        if (activeFileBrowser == browser) activeFileBrowser = nullptr;
+        delete browser;
     },LV_EVENT_DELETE,browser);
     auto *bar=lv_obj_create(body);
     lv_obj_remove_style_all(bar);
