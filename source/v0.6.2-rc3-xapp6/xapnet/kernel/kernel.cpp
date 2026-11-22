@@ -719,7 +719,7 @@ void CKernel::UpdateNetworkStatus()
 
 void CKernel::Run()
 {
-    Debug("[XDOS] V0.6.2-RC3 XAPP6-PERF7-VC4-AnalyticsRegionGuard-FILESV2 / Pi 3 ARM32\r\n");
+    Debug("[XDOS] V0.6.2-RC3 XAPP6-PERF7-VC4-AnalyticsRegionGuard-FVWIND / Pi 3 ARM32\r\n");
 #if XDOS_USE_LVGL
     ui_.Initialize(&desktop_,debugSerialReady_ ? &serial_ : 0);
     static CVCHIQDevice gpu(CMemorySystem::Get(),&interrupt_);
@@ -884,7 +884,7 @@ void CKernel::Run()
                   [](const char *path) -> int { return XdosDeleteFile(path); },
                   XdosFilesQueueLaunch,XdosFilesClaim,XdosFilesSetPanes};
         filesApi.base.struct_bytes=sizeof filesApi;
-        const char *const filesPath="SD:/XDOS/INBOX/FVFILES.XAPP";
+        const char *const filesPath="SD:/XDOS/INBOX/FWFILES.XAPP";
         auto v2Host=[&](const char *path) {
             return !strcasecmp(path,filesPath) ? &filesApi.base : &v2api.base;
         };
@@ -933,7 +933,7 @@ void CKernel::Run()
         if ((uartOpen ? shortcut==Shortcut::Notepad : desktop_.TakeNotepadRequest()) &&
             ui_.AtDesktop() && (!uartOpen || canOpen)) {
             const int slot = storageMounted_ ?
-                XappV2Runtime::Open("SD:/XDOS/INBOX/FVNOTE.XAPP", &v2api.base) : -1;
+                XappV2Runtime::Open("SD:/XDOS/INBOX/FWNOTE.XAPP", &v2api.base) : -1;
             v2ShortcutOpened=slot>=0;
             desktop_.ReportAppResult(slot >= 0 ? "Notepad started" : "Notepad could not start");
         }
@@ -1046,7 +1046,7 @@ void CKernel::Run()
             const bool files=!strcasecmp(app->path,"SD:/XDOS/APPS/FILES.XAPP");
             if (files || notepad || app->kind==XdosAppKind::CoreApp) {
                 // XDOS MC4: V2 app -> lowest free slot; it borrows a free core.
-                const char *path=files ? filesPath : notepad ? "SD:/XDOS/INBOX/FVNOTE.XAPP" : app->path;
+                const char *path=files ? filesPath : notepad ? "SD:/XDOS/INBOX/FWNOTE.XAPP" : app->path;
                 const int slot = !uartOpen && canOpen && storageMounted_ ?
                     XappV2Runtime::Open(path, v2Host(path)) : -100;
                 CString line;

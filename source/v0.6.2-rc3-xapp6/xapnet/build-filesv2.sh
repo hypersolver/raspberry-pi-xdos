@@ -17,7 +17,7 @@ for app in files notepad; do
 done
 arm-none-eabi-nm -u "$work/files.o" "$work/notepad.o" | awk '$1=="U" {print "LDFLAGS += --undefined=" $2}' | sort -u >> "$sample/xapp-imports.mk"
 make -C "$sample" -j4
-cp "$sample/kernel8-32.img" "$out/FILESV2.IMG"
+cp "$sample/kernel8-32.img" "$out/FVWIND.IMG"
 cp "$sample/kernel8-32.elf" "$out/kernel8-32.elf"
 PYTHONPATH="$tool" "${PACK_PYTHON:-python3}" - "$work" "$out" <<'PY'
 from pathlib import Path
@@ -25,8 +25,8 @@ import sys
 import xapp_v2_pack as packer
 work,out=map(Path,sys.argv[1:])
 symbols=packer.kernel_symbols(out/'kernel8-32.elf')
-fp=packer.kernel_fingerprint(symbols,out/'FILESV2.IMG')
-for source,target in [('files','FVFILES.XAPP'),('notepad','FVNOTE.XAPP')]:
+fp=packer.kernel_fingerprint(symbols,out/'FVWIND.IMG')
+for source,target in [('files','FWFILES.XAPP'),('notepad','FWNOTE.XAPP')]:
     print(target, packer.pack([work/(source+'.o')],symbols,fp,out/target))
 PY
-(cd "$out" && sha256sum FILESV2.IMG FVFILES.XAPP FVNOTE.XAPP > SHA256SUMS.txt)
+(cd "$out" && sha256sum FVWIND.IMG FWFILES.XAPP FWNOTE.XAPP > SHA256SUMS.txt)
