@@ -6,7 +6,7 @@ XDOS is an ARM32 bare-metal desktop for Raspberry Pi. Circle provides the hardwa
 
 ## RPiDuino Arduino SDK
 
-Install RPiDuino in Arduino Boards Manager to build standalone sketches for Pi 2, Pi 3/3B+, Pi 4 and Pi 5. [Setup and microSD boot guide](Arduino%20SDK/README.md) · [Boards Manager index URL](https://raw.githubusercontent.com/hypersolver/raspberry-pi-xdos/main/package_rpiduino_index.json)
+The Arduino SDK, board package, and examples are maintained in [RPiDuino](https://github.com/hypersolver/RPiDuino). [Arduino IDE setup](https://github.com/hypersolver/RPiDuino/blob/main/README.en.md) · [Boards Manager index](https://raw.githubusercontent.com/hypersolver/RPiDuino/main/package_rpiduino_index.json) · [Legacy XDOS index](https://raw.githubusercontent.com/hypersolver/raspberry-pi-xdos/main/package_rpiduino_index.json)
 
 ## Quick start
 
