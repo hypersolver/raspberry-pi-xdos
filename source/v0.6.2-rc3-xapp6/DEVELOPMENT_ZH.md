@@ -34,3 +34,7 @@ Pi 3B+ 已驗證開機、UART 開啟 Files 和 HDMI 配色。詳見[變更、安
 ## FILESV2
 
 Pi 3B+ 已驗證外部 Files V2 與 Notepad 並行。詳見[變更、操作及實測](FILESV2_ZH.md)。
+
+## FVMEDIA
+
+[變更、操作與 Pi 3B+ 實測紀錄](FVMEDIA_ZH.md)。

@@ -31,3 +31,7 @@ Pi 3B+ boot, Files launch over UART, and the HDMI color fix were verified. See [
 ## FILESV2
 
 External Files V2 and Notepad ran concurrently on Pi 3B+. See [changes, operation and test records](FILESV2_EN.md).
+
+## FVMEDIA
+
+[Changes, operation and Pi 3B+ test record](FVMEDIA_EN.md).
