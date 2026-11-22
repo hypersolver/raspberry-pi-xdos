@@ -14,7 +14,7 @@ circle=$work/circle
 sample=$circle/sample/xdos-sdboot
 cp "$src"/kernel/* "$sample/"
 printf 'DEFINE += -DXDOS_BUILD_TAG=\\"%s\\" -DXDOS_APP_PREFIX=\\"%s\\"\n' "$tag" "$prefix" >> "$circle/Config.mk"
-tool=$(realpath "$src/../../../../CLAUD XDOS/tools/mc4/xappv2")
+tool="$src/xappv2-tools"   # packer + export-table generator (R17), versioned with the kernel
 flags=(-Os -mcpu=cortex-a53 -marm -mfloat-abi=hard -mfpu=neon-vfpv4 -ffreestanding -ffunction-sections -fdata-sections -fno-unwind-tables -fno-asynchronous-unwind-tables -fno-exceptions -fno-rtti -mword-relocations -DRASPPI=3 -DAARCH=32 -DLV_CONF_INCLUDE_SIMPLE -I "$circle/addon/lvgl/lvgl" -I "$circle/addon/lvgl" -I "$circle/include" -I "$sample" -Wall -Wextra)
 for app in files notepad calculator paint terminal; do
     arm-none-eabi-g++ "${flags[@]}" -c "$src/apps/$app.cpp" -o "$work/$app.o"
@@ -60,6 +60,11 @@ make -C "$circle/lib/net" -j4
 cp "$src"/circle-lvgl/*.cpp "$circle/addon/lvgl/"   # R16-B: core lending limit, sleep/time API
 make -C "$circle/addon/lvgl" -j4
 make -C "$sample" -j4
+# R17: second link with the export table, so kernel-independent XAPPs can bind
+# their imports at load time. The table references every exported symbol.
+"${PACK_PYTHON:-python3}" "$tool/gen_exports.py" "$sample/kernel8-32.elf" "$sample/xdos_exports.c"
+echo 'OBJS += xdos_exports.o' >> "$sample/xapp-imports.mk"
+make -C "$sample" -j4
 cp "$sample/kernel8-32.img" "$out/$tag.IMG"
 cp "$sample/kernel8-32.elf" "$out/kernel8-32.elf"
 PYTHONPATH="$tool" "${PACK_PYTHON:-python3}" - "$work" "$out" "$tag" "$prefix" <<'PY'
@@ -69,9 +74,12 @@ import xapp_v2_pack as packer
 work,out=map(Path,sys.argv[1:3])
 tag,prefix=sys.argv[3:5]
 symbols=packer.kernel_symbols(out/'kernel8-32.elf')
+import os
+# R17: kernel-independent modules by default; XDOS_XAPP_BOUND=1 packs bound ones as before.
+kinds=None if os.environ.get('XDOS_XAPP_BOUND')=='1' else packer.kernel_symbol_kinds(out/'kernel8-32.elf')
 fp=packer.kernel_fingerprint(symbols,out/(tag+'.IMG'))
 for source,target in [('files',prefix+'FILES.XAPP'),('notepad',prefix+'NOTE.XAPP'),('calculator',prefix+'CALC.XAPP'),('paint',prefix+'PAINT.XAPP'),('terminal',prefix+'TERM.XAPP'),('video',prefix+'VIDEO.XAPP'),('music',prefix+'MUSIC.XAPP'),('browser',prefix+'BROWSE.XAPP'),('widgets',prefix+'WIDGET.XAPP'),('benchmark',prefix+'BENCH.XAPP')]:
     packer.SLOT_BYTES=(768 if source=='benchmark' else 320)*1024
-    print(target, packer.pack([work/(source+'.o')],symbols,fp,out/target))
+    print(target, packer.pack([work/(source+'.o')],symbols,fp,out/target,kinds=kinds))
 PY
 (cd "$out" && sha256sum "$tag.IMG" "$prefix"*.XAPP > SHA256SUMS.txt)

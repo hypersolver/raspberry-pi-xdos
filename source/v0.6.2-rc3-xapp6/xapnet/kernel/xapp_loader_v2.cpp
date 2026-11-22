@@ -142,7 +142,8 @@ XappLoaderV2::Result XappLoaderV2::ExecuteFile(const char *path, const XdosHostA
     }
     XdosXappHeaderV2 h;
     memcpy(&h, image, sizeof h);
-    if (requireBound && !(h.flags & XDOS_XAPP_V2_FLAG_BOUND)) {
+    /* R17: import-linked modules are kernel independent and count as bound. */
+    if (requireBound && !(h.flags & (XDOS_XAPP_V2_FLAG_BOUND | XDOS_XAPP_V2_FLAG_IMPORTS))) {
         delete [] image;
         lastError = "module not bound to a kernel";
         return FORMAT_INVALID;
@@ -160,7 +161,7 @@ XappLoaderV2::Result XappLoaderV2::ExecuteFile(const char *path, const XdosHostA
         Trace(api, "[XAPP2] Module rejected: ");
         Trace(api, lastError);
         Trace(api, "\r\n");
-        return rc == XDOS_XAPP_V2_E_KERNEL ? KERNEL_MISMATCH :
+        return rc == XDOS_XAPP_V2_E_KERNEL || rc == XDOS_XAPP_V2_E_IMPORT ? KERNEL_MISMATCH :
                rc == XDOS_XAPP_V2_E_SLOT   ? SIZE_INVALID :
                rc == XDOS_XAPP_V2_E_HEADER ? FORMAT_INVALID : RELOC_INVALID;
     }

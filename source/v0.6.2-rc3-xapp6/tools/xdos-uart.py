@@ -65,7 +65,10 @@ def benchmark_result(port):
 
 
 def send_file(port, name, data, crc):
-    exchange(port, f"PUT {name} {len(data):08x} {crc:08x}", "@XDOS OK")
+    line = exchange(port, f"PUT {name} {len(data):08x} {crc:08x}", "@XDOS OK")
+    if "@XDOS PRESENT" in line:   # R17 kernels: identical file already in the inbox
+        print(f"Already on SD:/XDOS/INBOX/{name} ({len(data)} bytes, same CRC32); nothing sent.")
+        return
     try:
         for offset in range(0, len(data), 128):
             exchange(port, "DATA " + data[offset:offset + 128].hex(), "@XDOS OK")

@@ -133,6 +133,7 @@ private:
     static constexpr const char *ConfigTemp = "SD:/xdosboot.tmp";
     FIL file_{};
     bool active_ = false;
+    bool present_ = false;                   // Begin(): identical file already in INBOX (R17)
     bool discard_ = false;
     bool resetting_ = false;
     unsigned used_ = 0, remaining_ = 0, expected_ = 0, crc_ = 0, lastActivity_ = 0;
@@ -167,6 +168,10 @@ private:
         unsigned port;
         if (!XdosNetFetch::ParseEndpoint(args,bytes,port) || !Begin(args))
             return false;
+        if (present_) {                       // identical file already in the inbox
+            fetchState_ = FetchState::Done;
+            return true;
+        }
         fetchState_ = FetchState::Working;
         fetchActive_ = true;
         if (new FetchTask(*this,CIPAddress(bytes),port)) return true;
@@ -280,11 +285,37 @@ private:
         result = f_mkdir("SD:/XDOS/INBOX");
         if (result != FR_OK && result != FR_EXIST) return false;
         FILINFO info;
-        if (f_stat(path_, &info) != FR_NO_FILE) return false;
+        present_ = false;
+        const FRESULT exists = f_stat(path_, &info);
+        if (exists == FR_OK) {
+            // Never overwrite; but the same bytes are already there: succeed without writing,
+            // so a repeated deploy does not need a new file name (R17).
+            present_ = SameFile(path_, remaining_, expected_);
+            return present_;
+        }
+        if (exists != FR_NO_FILE) return false;
         if (f_open(&file_, Temp, FA_WRITE | FA_CREATE_ALWAYS) != FR_OK) return false;
         crc_ = ~0U;
         active_ = true;
         return true;
+    }
+
+    // True when `path` holds exactly `size` bytes with CRC32 `crc`.
+    static bool SameFile(const char *path, unsigned size, unsigned crc)
+    {
+        FIL file;
+        if (f_open(&file, path, FA_READ) != FR_OK) return false;
+        bool same = f_size(&file) == size;
+        unsigned value = ~0U;
+        unsigned char buffer[512];
+        while (same) {
+            UINT got = 0;
+            if (f_read(&file, buffer, sizeof buffer, &got) != FR_OK) { same = false; break; }
+            if (!got) break;
+            value = UpdateCrc(value, buffer, got);
+        }
+        f_close(&file);
+        return same && ~value == crc;
     }
 
     bool Data(const char *hex)
@@ -683,6 +714,10 @@ private:
                 ok = RestoreConfig();
             } else if (!active_ && command==Command::Put) {
                 ok = Begin(cmd + 4);
+                if (ok && present_) {             // identical file already there: no DATA needed
+                    Reply(serial, "@XDOS PRESENT @XDOS OK\r\n");
+                    return;
+                }
             } else if (active_ && command==Command::Data) {
                 ok = Data(cmd + 5);
             } else if (active_ && command==Command::End) {

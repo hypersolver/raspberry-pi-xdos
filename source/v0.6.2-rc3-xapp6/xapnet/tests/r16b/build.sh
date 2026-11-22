@@ -7,7 +7,7 @@ set -euo pipefail
 circle=$1; out=$2; tag=$3; prefix=$4
 here=$(cd "$(dirname "$0")" && pwd)
 sample=$circle/sample/xdos-sdboot
-tool=$(realpath "$here/../../../../../../CLAUD XDOS/tools/mc4/xappv2")
+tool="$here/../../xappv2-tools"
 work=$(mktemp -d)
 flags=(-Os -mcpu=cortex-a53 -marm -mfloat-abi=hard -mfpu=neon-vfpv4 -ffreestanding -ffunction-sections
        -fdata-sections -fno-unwind-tables -fno-asynchronous-unwind-tables -mword-relocations
@@ -23,6 +23,8 @@ import xapp_v2_pack as packer
 work, out = map(Path, sys.argv[1:3]); tag, prefix = sys.argv[3:5]
 symbols = packer.kernel_symbols(out / 'kernel8-32.elf')
 fp = packer.kernel_fingerprint(symbols, out / (tag + '.IMG'))
+import os
+kinds = None if os.environ.get('XDOS_XAPP_BOUND') == '1' else packer.kernel_symbol_kinds(out / 'kernel8-32.elf')
 for src, name in (('core', 'CORE'), ('slow', 'SLOW'), ('sleep', 'SLEEP')):
-    print(prefix + name + '.XAPP', packer.pack([work / (src + '.o')], symbols, fp, out / (prefix + name + '.XAPP')))
+    print(prefix + name + '.XAPP', packer.pack([work / (src + '.o')], symbols, fp, out / (prefix + name + '.XAPP'), kinds=kinds))
 PY
