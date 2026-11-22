@@ -19,6 +19,7 @@ static XdosUartService &TerminalUart()
 #include "xapp_v2_runtime.h"
 #include "xdos_note_v2.h"
 #include "xdos_files_v2.h"
+#include "xdos_terminal_v2.h"
 #include "xdos_file_delete.h"
 #include "xapp_loader_v2.h"
 #include "xapp_loader.h"
@@ -719,7 +720,7 @@ void CKernel::UpdateNetworkStatus()
 
 void CKernel::Run()
 {
-    Debug("[XDOS] V0.6.2-RC3 XAPP6-PERF7-VC4-AnalyticsRegionGuard-FVWIND / Pi 3 ARM32\r\n");
+    Debug("[XDOS] V0.6.2-RC3 XAPP6-PERF7-VC4-AnalyticsRegionGuard-FVAPPS / Pi 3 ARM32\r\n");
 #if XDOS_USE_LVGL
     ui_.Initialize(&desktop_,debugSerialReady_ ? &serial_ : 0);
     static CVCHIQDevice gpu(CMemorySystem::Get(),&interrupt_);
@@ -884,9 +885,40 @@ void CKernel::Run()
                   [](const char *path) -> int { return XdosDeleteFile(path); },
                   XdosFilesQueueLaunch,XdosFilesClaim,XdosFilesSetPanes};
         filesApi.base.struct_bytes=sizeof filesApi;
-        const char *const filesPath="SD:/XDOS/INBOX/FWFILES.XAPP";
+        const char *const filesPath="SD:/XDOS/INBOX/FAFILES.XAPP";
+        static XdosTerminalV2Api terminalApi;
+        terminalApi={api,XDOS_TERMINAL_V2_CAPABILITY,
+            [](void *opaque,const char *text) -> int32_t {
+                auto *k=static_cast<CKernel *>(opaque);
+                if (!text || !*text || strlen(text)>=160) return -1;
+                const XdosCommandReply reply{&k->desktop_,[](void *context,const char *message) {
+                    static_cast<Desktop *>(context)->Print(message);
+                }};
+                char command[160];
+                const char *p=text;
+                while (*p==' ' || *p=='\t') ++p;
+                unsigned used=0;
+                for (; *p; ++p) {
+                    const char ch=*p;
+                    if (ch=='\r' || ch=='\n') return -1;
+                    command[used++]=ch>='a' && ch<='z' ? ch-'a'+'A' : ch;
+                }
+                while (used && command[used-1]==' ') --used;
+                command[used]=0;
+                if (!TerminalUart().RunTerminalCommand(command,reply)) {
+                    k->desktop_.RunLegacyTerminal(text);
+                }
+                return 0;
+            },
+            [](void *ctx) { return static_cast<CKernel *>(ctx)->desktop_.TerminalRevision(); },
+            [](void *ctx) { return static_cast<CKernel *>(ctx)->desktop_.TerminalText(); }
+        };
+        terminalApi.base.struct_bytes=sizeof terminalApi;
+        const char *const terminalPath="SD:/XDOS/INBOX/FATERM.XAPP";
         auto v2Host=[&](const char *path) {
-            return !strcasecmp(path,filesPath) ? &filesApi.base : &v2api.base;
+            if (!strcasecmp(path,filesPath)) return &filesApi.base;
+            if (!strcasecmp(path,terminalPath)) return &terminalApi.base;
+            return &v2api.base;
         };
 
         {   // XDOS_CORE_JOBS: V2 app runtime (core 0)
@@ -920,20 +952,17 @@ void CKernel::Run()
 #if XDOS_USE_LVGL
         if ((uartOpen ? shortcut==Shortcut::Calculator : desktop_.TakeCalculatorRequest()) &&
             ui_.AtDesktop() && (!uartOpen || canOpen)) {
-            XdosKeypadApi keypad = {api, [](void *ctx, const char *title, const char *keys,
-                                         XdosKeypadInput input) -> int32_t {
-                return static_cast<CKernel *>(ctx)->ui_.OpenKeypad(title, keys, input);
-            }};
-            keypad.base.struct_bytes = sizeof keypad;
-            desktop_.ReportAppResult(storageMounted_ ?
-                XdosRunCalculatorShortcut(&keypad.base) : "XAPP: FAT32 NOT READY");
+            const int slot=storageMounted_ ?
+                XappV2Runtime::Open("SD:/XDOS/INBOX/FACALC.XAPP",&v2api.base) : -1;
+            v2ShortcutOpened=slot>=0;
+            desktop_.ReportAppResult(slot>=0 ? "Calculator started" : "Calculator could not start");
         }
 #endif
 #if XDOS_USE_LVGL
         if ((uartOpen ? shortcut==Shortcut::Notepad : desktop_.TakeNotepadRequest()) &&
             ui_.AtDesktop() && (!uartOpen || canOpen)) {
             const int slot = storageMounted_ ?
-                XappV2Runtime::Open("SD:/XDOS/INBOX/FWNOTE.XAPP", &v2api.base) : -1;
+                XappV2Runtime::Open("SD:/XDOS/INBOX/FANOTE.XAPP", &v2api.base) : -1;
             v2ShortcutOpened=slot>=0;
             desktop_.ReportAppResult(slot >= 0 ? "Notepad started" : "Notepad could not start");
         }
@@ -950,6 +979,19 @@ void CKernel::Run()
             case Shortcut::Music: workspace=Desktop::MusicApp; break;
             default: workspace=Desktop::NoWorkspace; break;
             }
+        }
+        if (workspace==Desktop::PaintApp && canOpen) {
+            const int slot=storageMounted_ ?
+                XappV2Runtime::Open("SD:/XDOS/INBOX/FAPAINT.XAPP",&v2api.base) : -1;
+            v2ShortcutOpened=slot>=0;
+            desktop_.ReportAppResult(slot>=0 ? "Paint started" : "Paint could not start");
+            workspace=Desktop::NoWorkspace;
+        }
+        if (workspace==Desktop::TerminalApp && canOpen) {
+            const int slot=storageMounted_ ? XappV2Runtime::Open(terminalPath,&terminalApi.base) : -1;
+            v2ShortcutOpened=slot>=0;
+            desktop_.ReportAppResult(slot>=0 ? "Terminal started" : "Terminal could not start");
+            workspace=Desktop::NoWorkspace;
         }
         if (workspace==Desktop::FilesApp && canOpen) {
             const int slot=storageMounted_ ? XappV2Runtime::Open(filesPath,&filesApi.base) : -1;
@@ -969,27 +1011,6 @@ void CKernel::Run()
                         [](void *opaque, int op, const char *text) -> int32_t {
                             auto *k = static_cast<CKernel *>(opaque);
                             switch (op) {
-                            case XDOS_REQUEST_TERMINAL: {
-                                if (!text || !*text || strlen(text)>=160) return -1;
-                                const XdosCommandReply reply{&k->desktop_,[](void *context,const char *message) {
-                                    static_cast<Desktop *>(context)->Print(message);
-                                }};
-                                char command[160];
-                                const char *p=text;
-                                while (*p==' ' || *p=='\t') ++p;
-                                unsigned used=0;
-                                for (; *p; ++p) {
-                                    const char ch=*p;
-                                    if (ch=='\r' || ch=='\n') return -1;
-                                    command[used++]=ch>='a' && ch<='z' ? ch-'a'+'A' : ch;
-                                }
-                                while (used && command[used-1]==' ') --used;
-                                command[used]=0;
-                                if (!TerminalUart().RunTerminalCommand(command,reply)) {
-                                    k->desktop_.RunLegacyTerminal(text);
-                                }
-                                return 0;
-                            }
                             case XDOS_REQUEST_LIST: return k->desktop_.RequestList() ? 0 : -1;
                             case XDOS_REQUEST_LIST_USB: return k->desktop_.ListUSB() ? 0 : -1;
                             case XDOS_REQUEST_READ: return k->desktop_.RequestRead(text) ? 0 : -1;
@@ -1044,9 +1065,14 @@ void CKernel::Run()
         if (const auto *app=desktop_.TakeDiscoveredApp()) {
             const bool notepad = !strcasecmp(app->path, "SD:/XDOS/APPS/NOTE.XAPP");
             const bool files=!strcasecmp(app->path,"SD:/XDOS/APPS/FILES.XAPP");
-            if (files || notepad || app->kind==XdosAppKind::CoreApp) {
+            const bool calculator=!strcasecmp(app->path,"SD:/XDOS/APPS/CALC.XAPP");
+            const bool paint=!strcasecmp(app->path,"SD:/XDOS/APPS/PAINT.XAPP");
+            const bool terminal=!strcasecmp(app->path,"SD:/XDOS/APPS/TERMINAL.XAPP");
+            if (files || notepad || calculator || paint || terminal || app->kind==XdosAppKind::CoreApp) {
                 // XDOS MC4: V2 app -> lowest free slot; it borrows a free core.
-                const char *path=files ? filesPath : notepad ? "SD:/XDOS/INBOX/FWNOTE.XAPP" : app->path;
+                const char *path=files ? filesPath : notepad ? "SD:/XDOS/INBOX/FANOTE.XAPP"
+                    : calculator ? "SD:/XDOS/INBOX/FACALC.XAPP"
+                    : paint ? "SD:/XDOS/INBOX/FAPAINT.XAPP" : terminal ? terminalPath : app->path;
                 const int slot = !uartOpen && canOpen && storageMounted_ ?
                     XappV2Runtime::Open(path, v2Host(path)) : -100;
                 CString line;

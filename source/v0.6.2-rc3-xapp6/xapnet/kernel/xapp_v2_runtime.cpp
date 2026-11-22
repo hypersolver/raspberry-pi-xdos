@@ -19,8 +19,6 @@ struct Instance {
     void *ctx;
     bool closing;
     bool exitPending;
-    bool closeAnimationStarted;
-    bool closeAnimationDone;
     lv_obj_t *window;                       /* xdos_v2_window(), owned by the runtime */
     void (*onKey)(void *, unsigned);
     void *keyCtx;
@@ -34,40 +32,12 @@ int focused = -1;                           /* slot whose window gets the keyboa
 bool capture = false;                       /* button went down on a V2 window */
 
 constexpr int kTitleH = 34;
-constexpr int kHalfScale = 128;
-constexpr int kFullScale = 256;
-
-void SetWindowScale(void *object, int32_t scale)
+void PlaceWindow(lv_obj_t *window, int32_t x, int32_t y, int32_t width, int32_t height)
 {
-    auto *window=static_cast<lv_obj_t *>(object);
-    lv_obj_set_style_transform_scale_x(window,scale,0);
-    lv_obj_set_style_transform_scale_y(window,scale,0);
-}
-
-void AnimateWindow(Instance &instance, bool closing)
-{
-    auto *window=instance.window;
-    const int32_t from=closing
-        ? lv_obj_get_style_transform_scale_x(window,LV_PART_MAIN) : kHalfScale;
-    lv_anim_delete(window,SetWindowScale);
-    lv_anim_t animation;
-    lv_anim_init(&animation);
-    lv_anim_set_var(&animation,window);
-    lv_anim_set_user_data(&animation,&instance);
-    lv_anim_set_values(&animation,from,closing ? kHalfScale : kFullScale);
-    lv_anim_set_duration(&animation,closing ? 140 : 160);
-    lv_anim_set_exec_cb(&animation,SetWindowScale);
-    lv_anim_set_path_cb(&animation,closing ? lv_anim_path_ease_in : lv_anim_path_ease_out);
-    if (closing) {
-        lv_anim_set_completed_cb(&animation,[](lv_anim_t *a) {
-            static_cast<Instance *>(lv_anim_get_user_data(a))->closeAnimationDone=true;
-        });
-    }
-    SetWindowScale(window,from);
-    if (!lv_anim_start(&animation)) {
-        if (closing) instance.closeAnimationDone=true;
-        else SetWindowScale(window,kFullScale);
-    }
+    auto *display=lv_obj_get_display(window);
+    const int32_t maxX=LV_MAX(0,lv_display_get_horizontal_resolution(display)-width);
+    const int32_t maxY=LV_MAX(0,lv_display_get_vertical_resolution(display)-height);
+    lv_obj_set_pos(window,LV_CLAMP(0,x,maxX),LV_CLAMP(0,y,maxY));
 }
 
 bool Held(int slot)
@@ -97,15 +67,8 @@ void TitleDrag(lv_event_t *e)
     lv_point_t v;
     lv_indev_get_vect(indev, &v);
     if (!v.x && !v.y) return;
-    lv_obj_set_style_opa_layered(win,LV_OPA_70,0);
-    int32_t x = lv_obj_get_x(win) + v.x, y = lv_obj_get_y(win) + v.y;
-    const int32_t sw = lv_display_get_horizontal_resolution(lv_display_get_default());
-    const int32_t sh = lv_display_get_vertical_resolution(lv_display_get_default());
-    if (x < 40 - lv_obj_get_width(win)) x = 40 - lv_obj_get_width(win);
-    if (x > sw - 40) x = sw - 40;
-    if (y < 0) y = 0;
-    if (y > sh - kTitleH) y = sh - kTitleH;
-    lv_obj_set_pos(win, x, y);
+    PlaceWindow(win,lv_obj_get_x(win)+v.x,lv_obj_get_y(win)+v.y,
+                lv_obj_get_width(win),lv_obj_get_height(win));
 }
 
 void CloseClicked(lv_event_t *e)
@@ -115,10 +78,7 @@ void CloseClicked(lv_event_t *e)
 
 void DropWindow(unsigned slot)
 {
-    if (Valid(instances[slot].window)) {
-        lv_anim_delete(instances[slot].window,SetWindowScale);
-        lv_obj_delete(instances[slot].window);
-    }
+    if (Valid(instances[slot].window)) lv_obj_delete(instances[slot].window);
     instances[slot].window = nullptr;
     if (focused != (int)slot) return;
     int next=-1;
@@ -288,15 +248,16 @@ extern "C" lv_obj_t *xdos_v2_window(int slot, const char *title, int width, int 
     if (Valid(in.window)) return lv_obj_get_child(in.window, 1);
     const int32_t sw = lv_display_get_horizontal_resolution(lv_display_get_default());
     const int32_t sh = lv_display_get_vertical_resolution(lv_display_get_default());
+    if (sw<=0 || sh<=kTitleH) return nullptr;
     if (width < 200) width = 200;
     if (height < 120) height = 120;
     if (width > sw) width = sw;
-    if (height > sh - 40) height = sh - 40;
+    if (height > sh - kTitleH) height = sh - kTitleH;
     lv_obj_t *win = lv_obj_create(lv_layer_top());
     lv_obj_remove_style_all(win);
     lv_obj_set_size(win, width, height + kTitleH);
     const int32_t x = sw - width - 24 - slot * 36, y = 60 + slot * 44;
-    lv_obj_set_pos(win, x < 0 ? 0 : x, y);
+    PlaceWindow(win,x,y,width,height+kTitleH);
     lv_obj_set_style_bg_color(win, lv_color_hex(0xF4F6F8), 0);
     lv_obj_set_style_bg_opa(win, LV_OPA_COVER, 0);
     lv_obj_set_style_border_color(win, lv_color_hex(0x30363D), 0);
@@ -312,12 +273,6 @@ extern "C" lv_obj_t *xdos_v2_window(int slot, const char *title, int width, int 
     lv_obj_set_style_bg_color(bar, lv_color_hex(0x1F5FAF), 0);
     lv_obj_remove_flag(bar, LV_OBJ_FLAG_SCROLLABLE);
     lv_obj_add_event_cb(bar, TitleDrag, LV_EVENT_PRESSING, win);
-    lv_obj_add_event_cb(bar,[](lv_event_t *event) {
-        const auto code=lv_event_get_code(event);
-        if (code==LV_EVENT_RELEASED || code==LV_EVENT_PRESS_LOST)
-            lv_obj_set_style_opa_layered(
-                static_cast<lv_obj_t *>(lv_event_get_user_data(event)),LV_OPA_COVER,0);
-    },LV_EVENT_ALL,win);
     lv_obj_t *label = lv_label_create(bar);
     lv_label_set_text(label, title ? title : "XAPP");
     lv_obj_set_style_text_color(label, lv_color_white(), 0);
@@ -338,10 +293,7 @@ extern "C" lv_obj_t *xdos_v2_window(int slot, const char *title, int width, int 
     lv_obj_set_style_pad_all(body, 8, 0);
 
     in.window = win;
-    lv_obj_set_style_transform_pivot_x(win,width/2,0);
-    lv_obj_set_style_transform_pivot_y(win,(height+kTitleH)/2,0);
     Focus(slot);
-    AnimateWindow(in,false);
     return body;
 }
 
@@ -398,16 +350,7 @@ void XappV2Runtime::Service()
     InitializeMemory();
     xdos_core0_service();
     for (unsigned i = 0; i < XappLoaderV2::Slots; ++i) {
-        auto &instance=instances[i];
-        if (!instance.exitPending) continue;
-        if (Valid(instance.window) && !instance.closeAnimationDone) {
-            if (!instance.closeAnimationStarted) {
-                instance.closeAnimationStarted=true;
-                lv_obj_set_style_opa_layered(instance.window,LV_OPA_COVER,0);
-                AnimateWindow(instance,true);
-            }
-            if (!instance.closeAnimationDone) continue;
-        }
+        if (!instances[i].exitPending) continue;
         DropWindow(i);
         instances[i] = Instance{};
         ReleaseMemory(i);
