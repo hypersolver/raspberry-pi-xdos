@@ -50,3 +50,7 @@ Pi 3B+ 已驗證外部 Files V2 與 Notepad 並行。詳見[變更、操作及�
 ## FVR17
 
 [動態匯入、同檔上傳與 Pi 3B+ 實測](FVR17_ZH.md)。
+
+## FVR18
+
+[CPU 工具列變更、操作與實測](FVR18_ZH.md)。

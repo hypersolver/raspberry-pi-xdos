@@ -47,3 +47,7 @@ External Files V2 and Notepad ran concurrently on Pi 3B+. See [changes, operatio
 ## FVR17
 
 [Dynamic imports, identical uploads and Pi 3B+ validation](FVR17_EN.md).
+
+## FVR18
+
+[CPU taskbar changes, setup and hardware verification](FVR18_EN.md).
