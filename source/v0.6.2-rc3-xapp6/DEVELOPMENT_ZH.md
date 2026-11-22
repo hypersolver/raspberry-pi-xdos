@@ -42,3 +42,7 @@ Pi 3B+ 已驗證外部 Files V2 與 Notepad 並行。詳見[變更、操作及�
 ## FVMNET2
 
 [自適應有線網路變更、操作與 Pi 3B+ 實測](FVMNET2_ZH.md)。
+
+## FVCORE2
+
+[R16-B 排程、操作與 Pi 3B+ 實測及回退](FVCORE2_ZH.md)。

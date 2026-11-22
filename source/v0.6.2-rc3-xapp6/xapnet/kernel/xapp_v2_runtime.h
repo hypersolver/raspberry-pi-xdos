@@ -3,11 +3,19 @@
 /* Core 0 side of the V2 app runtime: open/close/status and the per-frame
  * service (core 0 call queue, deferred slot release). */
 #include "xdos_sdk_v1.h"
+#include "desktop_apps.h"
 
 namespace XappV2Runtime {
 /* Load `path` into the lowest free V2 slot and run its entry. Returns the
  * slot (0..3) or a negative XappLoaderV2::Result. */
-int Open(const char *path, const XdosHostApiV1 *api, bool large = false);
+int Open(const char *path, const XdosHostApiV1 *api, bool large = false,
+         XdosScreen screen = XdosScreen::Window);
+/* Open() result when a Full app is requested while another Full app runs (R16-B). */
+constexpr int SCREEN_BUSY = -11;
+/* True while a V2 app opened with XdosScreen::Full is running. */
+bool FullActive();
+/* Slot whose app was just throttled for overrunning its core-0 slices, or -1 (once). */
+int TakeThrottled();
 /* Ask the app in `slot` to close (its registered on_close). False when the
  * slot is free or the app registered no close handler. */
 bool Close(int slot);

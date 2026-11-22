@@ -22,8 +22,18 @@ struct Instance {
     lv_obj_t *window;                       /* xdos_v2_window(), owned by the runtime */
     void (*onKey)(void *, unsigned);
     void *keyCtx;
+    XdosScreen screen;                      /* R16-B: Full apps are exclusive */
+    unsigned sliceStart;                    /* core-0 shared mode budget */
+    unsigned slicesOver2ms;
+    unsigned longStreak;                    /* consecutive slices over 10 ms */
+    unsigned skip;
+    bool throttled;
 };
 Instance instances[XappLoaderV2::Slots];
+int throttledNotice = -1;                   /* slot to report once on the desktop */
+
+constexpr unsigned kSliceBudgetUs = 2000;   /* aim per core-0 slice */
+constexpr unsigned kSliceLongUs = 10000;    /* 3 in a row -> throttle */
 static_assert(XappIpc::Slots == XappLoaderV2::Slots, "IPC slots must match loader");
 static_assert(XappIpc::Payload == XDOS_IPC_PAYLOAD, "IPC payload must match public ABI");
 XappIpc ipc;
@@ -311,12 +321,67 @@ extern "C" void xdos_v2_exit(int slot)
     instances[slot].exitPending = true;
 }
 
-int XappV2Runtime::Open(const char *path, const XdosHostApiV1 *api, bool large)
+/* Core 0 shared mode budget: see xdos_corejobs.h. */
+extern "C" int xdos_v2_shared_begin(int slot)
 {
+    if (!Held(slot)) return 0;
+    Instance &in = instances[slot];
+    if (in.throttled && (in.skip++ & 3) != 0) return 0;
+    in.sliceStart = xdos_core_time_us();
+    return 1;
+}
+
+extern "C" void xdos_v2_shared_end(int slot)
+{
+    if (!Held(slot)) return;
+    Instance &in = instances[slot];
+    const unsigned us = xdos_core_time_us() - in.sliceStart;
+    if (us > kSliceBudgetUs) ++in.slicesOver2ms;
+    in.longStreak = us > kSliceLongUs ? in.longStreak + 1 : 0;
+    if (in.longStreak >= 3 && !in.throttled) {
+        in.throttled = true;
+        throttledNotice = slot;
+    }
+}
+
+extern "C" unsigned xdos_v2_shared_stats(int slot)
+{
+    return Held(slot) ? instances[slot].slicesOver2ms : 0;
+}
+
+bool XappV2Runtime::FullActive()
+{
+    for (unsigned i = 0; i < XappLoaderV2::Slots; ++i)
+        if (XappLoaderV2::IsHeld(i) && instances[i].screen == XdosScreen::Full &&
+            !instances[i].closing && !instances[i].exitPending) return true;
+    return false;
+}
+
+int XappV2Runtime::TakeThrottled()
+{
+    const int slot = throttledNotice;
+    throttledNotice = -1;
+    return slot;
+}
+
+/* Module-only kernel exports (R16-B): nothing in the kernel calls them, so keep them
+ * referenced from a live function or --gc-sections drops them before packing. */
+static const void *const kModuleExports[] = {
+    (const void *)xdos_core_sleep_us, (const void *)xdos_core_time_us,
+    (const void *)xdos_core_lent_count, (const void *)xdos_core_lend_limit,
+    (const void *)xdos_v2_shared_begin, (const void *)xdos_v2_shared_end,
+    (const void *)xdos_v2_shared_stats,
+};
+
+int XappV2Runtime::Open(const char *path, const XdosHostApiV1 *api, bool large, XdosScreen screen)
+{
+    asm volatile("" :: "r"(kModuleExports) : "memory");
     InitializeMemory();
+    if (screen == XdosScreen::Full && FullActive()) return SCREEN_BUSY;
     const int slot = XappLoaderV2::AcquireSlot(large);
     if (slot < 0) return XappLoaderV2::NO_SLOT;
     instances[slot] = Instance{};
+    instances[slot].screen = screen;
     endpoints[slot] = ipc.Activate(slot);
     const XappLoaderV2::Result r = XappLoaderV2::ExecuteFile(path, api, (unsigned)slot, true);
     if (r != XappLoaderV2::OK) {
@@ -366,10 +431,17 @@ void XappV2Runtime::Status(char *buffer, unsigned size)
     s.Format("slots");
     for (unsigned i = 0; i < XappLoaderV2::Slots; ++i) {
         CString part;
+        const Instance &in = instances[i];
         part.Format(" %u=%s", i, !XappLoaderV2::IsHeld(i) ? "free" :
-                    instances[i].closing ? "closing" : "app");
+                    in.closing ? "closing" :
+                    in.screen == XdosScreen::Full ? (in.throttled ? "full/throttled" : "full") :
+                    in.screen == XdosScreen::None ? (in.throttled ? "none/throttled" : "none") :
+                    (in.throttled ? "app/throttled" : "app"));
         s.Append(part);
     }
+    CString lim;
+    lim.Format(" lend %u/%u", xdos_core_lent_count(), xdos_core_lend_limit());
+    s.Append(lim);
     s.Append(" cores");
     for (unsigned core = 1; core < 4; ++core) {
         int32_t result = 0;

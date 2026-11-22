@@ -47,3 +47,7 @@ V0.5 和 V0.5.2 的來源辨識、核心雜湊與使用方式見[早期版本復
 ## FVMNET2
 
 [Release](https://github.com/hypersolver/raspberry-pi-xdos/releases/tag/v0.6.2-rc3-xapp6-fvmnet2) · [繁體中文](source/v0.6.2-rc3-xapp6/FVMNET2_ZH.md) · [English](source/v0.6.2-rc3-xapp6/FVMNET2_EN.md)
+
+## FVCORE2
+
+[Release](https://github.com/hypersolver/raspberry-pi-xdos/releases/tag/v0.6.2-rc3-xapp6-fvcore2) · [繁體中文](source/v0.6.2-rc3-xapp6/FVCORE2_ZH.md) · [English](source/v0.6.2-rc3-xapp6/FVCORE2_EN.md)
