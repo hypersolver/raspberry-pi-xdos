@@ -249,6 +249,9 @@ extern "C" void xdos_v2_register_close(int slot, void (*on_close)(void *), void 
     instances[slot].ctx = ctx;
 }
 
+/* R19 modes (core 0 only). */
+static bool headlessMode, kioskMode;
+
 /* A movable window on its owning screen with a title bar and close button that
  * calls the app's registered on_close. Returns the content area; the runtime
  * deletes the window when the slot is released. Core 0 only. */
@@ -264,22 +267,29 @@ extern "C" lv_obj_t *xdos_v2_window(int slot, const char *title, int width, int 
     if (height < 120) height = 120;
     if (width > sw) width = sw;
     if (height > sh - kTitleH) height = sh - kTitleH;
+    /* R19 kiosk: the Full app fills the screen; the title bar (child 0) is kept
+     * for the child layout but hidden, so the app cannot be moved or closed. */
+    const bool kioskWindow = kioskMode && in.screen == XdosScreen::Full;
+    const int32_t titleH = kioskWindow ? 0 : kTitleH;
+    if (kioskWindow) { width = sw; height = sh; }
     lv_obj_t *win = lv_obj_create(lv_screen_active());
     lv_obj_remove_style_all(win);
-    lv_obj_set_size(win, width, height + kTitleH);
+    lv_obj_set_size(win, width, height + titleH);
     const int32_t x = sw - width - 24 - slot * 36, y = 60 + slot * 44;
-    PlaceWindow(win,x,y,width,height+kTitleH);
+    if (kioskWindow) lv_obj_set_pos(win, 0, 0);
+    else PlaceWindow(win,x,y,width,height+kTitleH);
     lv_obj_set_style_bg_color(win, lv_color_hex(0xF4F6F8), 0);
     lv_obj_set_style_bg_opa(win, LV_OPA_COVER, 0);
     lv_obj_set_style_border_color(win, lv_color_hex(0x30363D), 0);
-    lv_obj_set_style_border_width(win, 1, 0);
-    lv_obj_set_style_shadow_width(win, 12, 0);
+    lv_obj_set_style_border_width(win, kioskWindow ? 0 : 1, 0);
+    lv_obj_set_style_shadow_width(win, kioskWindow ? 0 : 12, 0);
     lv_obj_set_style_shadow_opa(win, LV_OPA_30, 0);
     lv_obj_remove_flag(win, LV_OBJ_FLAG_SCROLLABLE);
 
     lv_obj_t *bar = lv_obj_create(win);                   /* child 0 */
     lv_obj_remove_style_all(bar);
     lv_obj_set_size(bar, lv_pct(100), kTitleH);
+    if (kioskWindow) lv_obj_add_flag(bar, LV_OBJ_FLAG_HIDDEN);
     lv_obj_set_style_bg_opa(bar, LV_OPA_COVER, 0);
     lv_obj_set_style_bg_color(bar, lv_color_hex(0x1F5FAF), 0);
     lv_obj_remove_flag(bar, LV_OBJ_FLAG_SCROLLABLE);
@@ -299,7 +309,7 @@ extern "C" lv_obj_t *xdos_v2_window(int slot, const char *title, int width, int 
 
     lv_obj_t *body = lv_obj_create(win);                  /* child 1: content */
     lv_obj_remove_style_all(body);
-    lv_obj_set_pos(body, 0, kTitleH);
+    lv_obj_set_pos(body, 0, titleH);
     lv_obj_set_size(body, width, height);
     lv_obj_set_style_pad_all(body, 8, 0);
 
@@ -385,6 +395,11 @@ void XappV2Runtime::CoreApps(char (*cpu)[64])
             AppendName(cpu[0], instances[i].name);
 }
 
+void XappV2Runtime::SetHeadless(bool headless) { headlessMode = headless; }
+bool XappV2Runtime::Headless() { return headlessMode; }
+void XappV2Runtime::SetKiosk(bool kiosk) { kioskMode = kiosk; }
+bool XappV2Runtime::Running(int slot) { return Held(slot) && !instances[slot].closing; }
+
 bool XappV2Runtime::FullActive()
 {
     for (unsigned i = 0; i < XappLoaderV2::Slots; ++i)
@@ -413,6 +428,7 @@ int XappV2Runtime::Open(const char *path, const XdosHostApiV1 *api, bool large, 
 {
     asm volatile("" :: "r"(kModuleExports) : "memory");
     InitializeMemory();
+    if (headlessMode && screen != XdosScreen::None) return NO_SCREEN;
     if (screen == XdosScreen::Full && FullActive()) return SCREEN_BUSY;
     const int slot = XappLoaderV2::AcquireSlot(large);
     if (slot < 0) return XappLoaderV2::NO_SLOT;

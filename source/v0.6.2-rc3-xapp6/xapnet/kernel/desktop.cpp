@@ -903,6 +903,7 @@ void Desktop::DrawIcons()
 
 void Desktop::DrawTaskbar()
 {
+    if (kiosk_) { Fill(0,height_-49,width_,49,0); return; }
     Fill(0,height_-49,width_,49,NAV);
     Fill(0,height_-49,width_,1,0x42637A);
     Fill(14,height_-42,123,33,ACCENT);
@@ -963,6 +964,7 @@ void Desktop::DrawTaskbar()
 }
 void Desktop::DrawDesktop()
 {
+    if (kiosk_) { Fill(0,0,width_,height_-49,0); return; }
     // Draw only the 8×8 cells intersecting the current damage rectangle.
     const int left=clipRender_ ? Clamp(clipX0_,0,width_) : 0;
     const int top=clipRender_ ? Clamp(clipY0_,65,height_-49) : 65;

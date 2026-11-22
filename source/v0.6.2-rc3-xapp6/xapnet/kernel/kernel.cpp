@@ -24,6 +24,7 @@ static XdosUartService &TerminalUart()
 #include "xdos_arduino/xdos_arduino_runtime.h"
 #include "app_shortcut.h"
 #include "xapp_v2_runtime.h"
+#include "xdos_mode.h"
 #include "xdos_corejobs.h"
 #include "xdos_note_v2.h"
 #include "xdos_files_v2.h"
@@ -127,6 +128,21 @@ public:
         }
     }
 };
+
+// R19 work mode state (main loop, core 0).
+namespace {
+XdosModeConfig modeCfg;
+XdosMode workMode = XdosMode::Desktop;
+bool autorunPending, kioskToggleRequest;
+int kioskSlot = -1;
+unsigned kioskRetryAtUs, kioskOpenFails, kioskRestarts;
+constexpr unsigned XdosKeyKioskToggle = 290;   // Ctrl+Alt+Esc
+
+void ModeLog(CSerialDevice *serial, const char *text)
+{
+    if (serial) serial->Write(text, strlen(text));
+}
+}
 
 CKernel *CKernel::instance_=0;
 
@@ -491,6 +507,13 @@ void CKernel::DesktopModifierHandler(unsigned char mods,const unsigned char keys
         for (unsigned i=0;i<6;++i) if (keys[i]==0x3D) altF4=true;
     }
     if (altF4 && !instance_->desktopAltF4Held_) instance_->QueueKey(XdosKeyAltF4);
+    // R19: Ctrl+Alt+Esc leaves kiosk mode for the desktop (and goes back).
+    static bool kioskKeyHeld;
+    bool kioskKey=false;
+    if ((mods&0x11) && (mods&0x44))
+        for (unsigned i=0;i<6;++i) if (keys[i]==0x29) kioskKey=true;
+    if (kioskKey && !kioskKeyHeld) instance_->QueueKey(XdosKeyKioskToggle);
+    kioskKeyHeld=kioskKey;
     instance_->desktopAltF4Held_=altF4;
 }
 
@@ -583,6 +606,9 @@ void CKernel::ProcessInput()
     while(keyTail_!=keyHead_) {
         unsigned t=keyTail_;const unsigned key=keys_[t];
         __sync_synchronize();keyTail_=(t+1)%QUEUE;
+        if (key==XdosKeyKioskToggle) { kioskToggleRequest=true; continue; }
+        // Kiosk: the desktop menu key and Alt+F4 must not close or hide the kiosk app.
+        if (workMode==XdosMode::Kiosk && (key==264 || key==265)) continue;
 #if XDOS_USE_LVGL
         if (XappV2Runtime::DeliverKey(key)) continue;   // XDOS MC4
         if (ui_.HandleTaskKey(key) || ui_.OnKey(key)) continue;
@@ -770,8 +796,44 @@ void CKernel::Run()
                   "desktop_first_flush" : "desktop_flush_timeout");
 #endif
     InitializeDesktopStorage();
+    {   // R19: work mode from SD:/XDOS/XDOS.CFG
+        if (storageMounted_) modeCfg = XdosReadModeConfig();
+        workMode = modeCfg.mode;
+        autorunPending = modeCfg.autorunCount > 0;
+        CString line;
+        line.Format("[MODE] %s (%s%s) kiosk=%s exit=%s autorun=%u bad_lines=%u\r\n",
+                    XdosModeName(workMode), modeCfg.found ? "XDOS.CFG" : "default",
+                    modeCfg.autoMode ? ", AUTO" : "", modeCfg.kiosk[0] ? modeCfg.kiosk : "-",
+                    modeCfg.kioskExit == XdosKioskExit::Restart ? "RESTART" :
+                    modeCfg.kioskExit == XdosKioskExit::Desktop ? "DESKTOP" : "REBOOT",
+                    modeCfg.autorunCount, modeCfg.badLines);
+        Debug((const char *)line);
+        if (workMode == XdosMode::Kiosk) {
+            XappV2Runtime::SetKiosk(true);
+            desktop_.SetKiosk(true);
+            kioskRetryAtUs = CTimer::GetClockTicks();
+        }
 #if XDOS_USE_LVGL
-    if (storageMounted_) {
+        if (workMode == XdosMode::Iot) {
+            // No LVGL from here on: leave one static notice on any attached display.
+            XappV2Runtime::SetHeadless(true);
+            auto *panel = lv_obj_create(lv_layer_sys());
+            lv_obj_remove_style_all(panel);
+            lv_obj_set_size(panel, lv_pct(100), lv_pct(100));
+            lv_obj_set_style_bg_color(panel, lv_color_black(), 0);
+            lv_obj_set_style_bg_opa(panel, LV_OPA_COVER, 0);
+            auto *label = lv_label_create(panel);
+            lv_label_set_text(label, "XDOS IOT MODE\n\nNo desktop. Control by UART (921600) or network.\n"
+                                     "Mode is set by MODE= in SD:/XDOS/XDOS.CFG");
+            lv_obj_set_style_text_color(label, lv_color_hex(0x7FD4FF), 0);
+            lv_obj_center(label);
+            lv_refr_now(lv_display_get_default());
+            xdos_present_frame();
+        }
+#endif
+    }
+#if XDOS_USE_LVGL
+    if (storageMounted_ && workMode != XdosMode::Iot) {
         ui_.Refresh(CTimer::GetClockTicks());
         lv_refr_now(lv_display_get_default());
         const unsigned iconsFlushStart=CTimer::GetClockTicks();
@@ -791,7 +853,7 @@ void CKernel::Run()
     LogBootTiming("usb_ready");
     AttachDevices(TRUE,CTimer::GetClockTicks());
 #if XDOS_USE_LVGL
-    lvgl_.Update(TRUE);
+    if (workMode != XdosMode::Iot) lvgl_.Update(TRUE);
     if (lvglMousePresent_) LogBootTiming("mouse_detected");
 #endif
     if (keyboard_) LogBootTiming("keyboard_detected");
@@ -1014,17 +1076,121 @@ void CKernel::Run()
                 note.Append("\r\n");
                 Debug((const char *)note);
             }
+            {   // R19 work mode: autorun, kiosk app supervision, MODE requests
+                CSerialDevice *log = debugSerialReady_ ? &serial_ : nullptr;
+                const unsigned now = CTimer::GetClockTicks();
+                if (autorunPending && storageMounted_) {
+                    autorunPending = false;
+                    for (unsigned i = 0; i < modeCfg.autorunCount; ++i) {
+                        char path[64];
+                        XdosAppPath(modeCfg.autorun[i], path, sizeof path);
+                        const int slot = XappV2Runtime::Open(path, v2Host(path), false, XdosScreen::None);
+                        CString line;
+                        line.Format("[MODE] autorun %s -> %d%s%s\r\n", modeCfg.autorun[i], slot,
+                                    slot < 0 ? " " : "", slot < 0 ? XappLoaderV2::LastError() : "");
+                        ModeLog(log, (const char *)line);
+                    }
+                }
+                auto leaveKiosk = [&](const char *why) {
+                    workMode = XdosMode::Desktop;
+                    XappV2Runtime::SetKiosk(false);
+                    desktop_.SetKiosk(false);
+                    if (kioskSlot >= 0 && XappV2Runtime::Running(kioskSlot) &&
+                        !XappV2Runtime::Close(kioskSlot)) xdos_v2_exit(kioskSlot);
+                    kioskSlot = -1;
+                    desktop_.ReportAppResult(why);
+                    CString line;
+                    line.Format("[MODE] DESKTOP (%s)\r\n", why);
+                    ModeLog(log, (const char *)line);
+                };
+                auto enterKiosk = [&]() -> bool {
+                    if (!modeCfg.kiosk[0] || workMode != XdosMode::Desktop || XappV2Runtime::FullActive())
+                        return false;
+                    workMode = XdosMode::Kiosk;
+                    XappV2Runtime::SetKiosk(true);
+                    desktop_.SetKiosk(true);
+                    kioskSlot = -1;
+                    kioskOpenFails = 0;
+                    kioskRetryAtUs = now;
+                    ModeLog(log, "[MODE] KIOSK\r\n");
+                    return true;
+                };
+                if (kioskToggleRequest) {
+                    kioskToggleRequest = false;
+                    if (workMode == XdosMode::Kiosk) leaveKiosk("Kiosk: Ctrl+Alt+Esc");
+                    else enterKiosk();
+                }
+                if (workMode == XdosMode::Kiosk && storageMounted_) {
+                    if (kioskSlot >= 0 && !XappLoaderV2::IsHeld(kioskSlot)) {
+                        // The kiosk app ended (closed itself, crashed out, or was closed).
+                        kioskSlot = -1;
+                        if (modeCfg.kioskExit == XdosKioskExit::Desktop) leaveKiosk("Kiosk app ended");
+                        else if (modeCfg.kioskExit == XdosKioskExit::Reboot) {
+                            ModeLog(log, "[MODE] kiosk app ended -> reboot\r\n");
+                            f_mount(nullptr, "SD:", 0);
+                            reboot();
+                        } else {
+                            ++kioskRestarts;
+                            kioskRetryAtUs = now + 1000000U;
+                            CString line;
+                            line.Format("[MODE] kiosk app ended -> restart #%u in 1 s\r\n", kioskRestarts);
+                            ModeLog(log, (const char *)line);
+                        }
+                    }
+                    if (workMode == XdosMode::Kiosk && kioskSlot < 0 && (int)(now - kioskRetryAtUs) >= 0) {
+                        char path[64];
+                        XdosAppPath(modeCfg.kiosk, path, sizeof path);
+                        const int slot = XappV2Runtime::Open(path, v2Host(path), false, XdosScreen::Full);
+                        CString line;
+                        line.Format("[MODE] kiosk %s -> %d%s%s\r\n", modeCfg.kiosk, slot,
+                                    slot < 0 ? " " : "", slot < 0 ? XappLoaderV2::LastError() : "");
+                        ModeLog(log, (const char *)line);
+                        if (slot >= 0) {
+                            kioskSlot = slot;
+                            kioskOpenFails = 0;
+                        } else if (++kioskOpenFails >= 3) {
+                            leaveKiosk("Kiosk app could not start; desktop opened");
+                        } else {
+                            kioskRetryAtUs = now + 1000000U;
+                        }
+                    }
+                }
+                char modeArg[12];
+                if (debugSerialReady_ && uart.TakeModeRequest(modeArg, sizeof modeArg)) {
+                    bool ok = true;
+                    XdosMode wanted;
+                    if (!strcmp(modeArg, "?")) {
+                    } else if (!XdosParseMode(modeArg, wanted)) {
+                        ok = false;
+                    } else if (wanted == workMode) {
+                    } else if (workMode == XdosMode::Iot || wanted == XdosMode::Iot) {
+                        ok = false;   // IOT changes need a restart (runtime switch: R19 step 4)
+                    } else if (wanted == XdosMode::Desktop) {
+                        leaveKiosk("Kiosk: UART MODE DESKTOP");
+                    } else {
+                        ok = enterKiosk();
+                    }
+                    CString reply;
+                    if (ok) reply.Format("@XDOS MODE %s KIOSK=%s SLOT=%d RESTARTS=%u AUTORUN=%u @XDOS OK\r\n",
+                                         XdosModeName(workMode), modeCfg.kiosk[0] ? modeCfg.kiosk : "-",
+                                         kioskSlot, kioskRestarts, modeCfg.autorunCount);
+                    else reply.Format("@XDOS MODE %s cannot switch to %s @XDOS ERROR\r\n",
+                                      XdosModeName(workMode), modeArg);
+                    XdosUartService::Send(serial_, (const char *)reply);
+                }
+            }
             if (debugSerialReady_) {
                 char name[40];
                 if (uart.TakeXapp2Open(name, sizeof name)) {
                     // "XAPP2 <file> [FULL|WINDOW|NONE]" (screen mode, default WINDOW)
-                    XdosScreen screen = XdosScreen::Window;
+                    XdosScreen screen = workMode == XdosMode::Iot ? XdosScreen::None : XdosScreen::Window;
                     if (char *space = strchr(name, ' ')) {
                         *space = 0;
                         const char *mode = space + 1;
                         while (*mode == ' ') ++mode;
                         if (!strcasecmp(mode, "FULL")) screen = XdosScreen::Full;
                         else if (!strcasecmp(mode, "NONE")) screen = XdosScreen::None;
+                        else if (!strcasecmp(mode, "WINDOW")) screen = XdosScreen::Window;
                     }
                     CString path;
                     path.Format("SD:/XDOS/INBOX/%s", name);
@@ -1035,6 +1201,8 @@ void CKernel::Run()
                     if (slot >= 0) reply.Format("@XDOS XAPP2 SLOT %d @XDOS OK\r\n", slot);
                     else if (slot == XappV2Runtime::SCREEN_BUSY)
                         reply.Format("@XDOS XAPP2 FAILED %d full-screen app already running @XDOS ERROR\r\n", slot);
+                    else if (slot == XappV2Runtime::NO_SCREEN)
+                        reply.Format("@XDOS XAPP2 FAILED %d IOT mode: only NONE apps @XDOS ERROR\r\n", slot);
                     else reply.Format("@XDOS XAPP2 FAILED %d %s @XDOS ERROR\r\n", slot,
                                       XappLoaderV2::LastError());
                     XdosUartService::Send(serial_, (const char *)reply);
@@ -1260,12 +1428,13 @@ void CKernel::Run()
             }
             desktop_.RequestFullRepaint();
         }
-        ui_.Tick();
+        if (workMode != XdosMode::Iot) ui_.Tick();
 #else
         if (uartOpen) uart.CompleteOpen(serial_,false);
 #endif
 #if XDOS_USE_LVGL
-        if ((unsigned)(nowUs - lastUiPollUs) >= 33000U || lastUiPollUs == 0) {
+        if (workMode != XdosMode::Iot &&
+            ((unsigned)(nowUs - lastUiPollUs) >= 33000U || lastUiPollUs == 0)) {
             ui_.Refresh(nowUs);  // update model BEFORE LVGL flush
             lastUiPollUs = nowUs;
         }
@@ -1273,7 +1442,7 @@ void CKernel::Run()
         const unsigned lvglStartUs = CTimer::GetClockTicks();
         const unsigned lvglInt0 = xdos_prof_irq_us + xdos_prof_fiq_us;
 #endif
-        lvgl_.Update(plugUpdated);
+        if (workMode != XdosMode::Iot) lvgl_.Update(plugUpdated);
         if (!iconsReported && xdosBootIconsDrawn) {
             LogBootTiming("icons_first_draw");
             iconsReported = true;

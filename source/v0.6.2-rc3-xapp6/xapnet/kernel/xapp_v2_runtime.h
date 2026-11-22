@@ -14,6 +14,15 @@ int Open(const char *path, const XdosHostApiV1 *api, bool large = false,
 constexpr int SCREEN_BUSY = -11;
 /* True while a V2 app opened with XdosScreen::Full is running. */
 bool FullActive();
+/* Open() result when an app with a window or full screen is requested in IOT mode (R19). */
+constexpr int NO_SCREEN = -12;
+/* R19 IOT mode: no LVGL; only Screen=None apps may open. */
+void SetHeadless(bool headless);
+bool Headless();
+/* R19 KIOSK mode: the Full app's window covers the whole screen, no title bar. */
+void SetKiosk(bool kiosk);
+/* True while `slot` holds a running app (not closing). */
+bool Running(int slot);
 /* Slot whose app was just throttled for overrunning its core-0 slices, or -1 (once). */
 int TakeThrottled();
 /* Display name of the app in `slot` (default: its file name without extension). */

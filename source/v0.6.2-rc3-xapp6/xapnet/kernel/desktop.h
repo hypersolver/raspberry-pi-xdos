@@ -87,6 +87,9 @@ public:
     void SetCpuLoad(unsigned cpu0, unsigned cpu1, unsigned cpu2, unsigned cpu3);
     // Taskbar: app names running on CPU0..3 ("" = idle / LVGL draw core).
     void SetCoreApps(const char (*apps)[64]);
+    // R19 kiosk mode: no icons, panels or taskbar; a black screen under the kiosk app.
+    void SetKiosk(bool kiosk) { if (kiosk_!=kiosk) { kiosk_=kiosk; RequestFullRepaint(); } }
+    bool Kiosk() const { return kiosk_; }
     void SetStorage(bool ready, const char *status);
     void SetUSBStorage(bool ready,const char *status);
     bool TakeStorageRequest(StorageRequest &out);
@@ -142,6 +145,7 @@ private:
     char netStatus_[64];
     unsigned cpuLoad_[4]{101,101,101,101};   // 101 = not sampled yet
     char coreApps_[4][64]{};                  // taskbar: apps per CPU
+    bool kiosk_=false;
     char storageStatus_[64], usbStorageStatus_[80], filesContent_[4096], noteStatus_[64];
     bool usbStorageReady_;
     unsigned usbStorageRevision_;

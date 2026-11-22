@@ -58,6 +58,15 @@ public:
     }
     int TakeXapp2Close() { const int s = xapp2Close_; xapp2Close_ = -1; return s; }
     bool TakeXapp2Status() { const bool s = xapp2Status_; xapp2Status_ = false; return s; }
+    // R19: "MODE" (query, arg "?") or "MODE DESKTOP|KIOSK|IOT" for the kernel main loop.
+    bool TakeModeRequest(char *arg, unsigned size)
+    {
+        if (!modeArg_[0]) return false;
+        strncpy(arg, modeArg_, size - 1);
+        arg[size - 1] = 0;
+        modeArg_[0] = 0;
+        return true;
+    }
     static void Send(CSerialDevice &serial, const char *text) { Reply(serial, text); }
     bool PowerTransferActive() const { return active_ || fetchState_==FetchState::Working; }
     void SetNetwork(CNetSubSystem *net) { net_ = net; }
@@ -144,6 +153,7 @@ private:
     char xapp2Name_[40] = {};
     int xapp2Close_ = -1;
     bool xapp2Status_ = false;
+    char modeArg_[12] = {};
     char playPath_[192]{};
     enum class FetchState { Idle, Working, Done, Failed };
     FetchState fetchState_ = FetchState::Idle;
@@ -521,7 +531,7 @@ private:
         return SetKernel(args);
     }
 
-    enum class Command { Unknown, Help, Ping, Power, Lvgl, BenchResult, Audio, Open, Play, Close, Fetch, FetchStatus, Reset, Cancel, Boot, BootClear, Put, Data, End, HdmiMode, Xapp2, Xapp2Close, Xapp2Status, File };
+    enum class Command { Unknown, Help, Ping, Power, Lvgl, BenchResult, Audio, Open, Play, Close, Fetch, FetchStatus, Reset, Cancel, Boot, BootClear, Put, Data, End, HdmiMode, Xapp2, Xapp2Close, Xapp2Status, File, Mode };
     struct CommandEntry { Command command; const char *name; bool arguments; bool terminal; };
     static constexpr CommandEntry commandTable_[] = {
         {Command::Help, "HELP", false, true},
@@ -547,6 +557,8 @@ private:
         {Command::Xapp2Status, "XAPP2-STATUS", false, false},
         {Command::Xapp2Close, "XAPP2-CLOSE", true, false},
         {Command::Xapp2, "XAPP2", true, false},
+        {Command::Mode, "MODE", false, false},
+        {Command::Mode, "MODE", true, false},
     };
 
     static const CommandEntry *FindCommand(const char *line)
@@ -660,6 +672,12 @@ private:
                 xapp2Status_ = true;
             }
             if (!queued) Reply(serial, "@XDOS ERROR\r\n");
+            return;
+        }
+        if (command==Command::Mode) {
+            const char *arg = cmd[4] ? cmd + 5 : "?";
+            if (active_ || modeArg_[0] || strlen(arg) >= sizeof modeArg_) Reply(serial, "@XDOS ERROR\r\n");
+            else strcpy(modeArg_, arg);
             return;
         }
         if (command==Command::Close) {
