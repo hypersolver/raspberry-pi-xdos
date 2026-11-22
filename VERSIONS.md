@@ -35,3 +35,7 @@ V0.5 和 V0.5.2 的來源辨識、核心雜湊與使用方式見[早期版本復
 ## FILECLR
 
 [Release](https://github.com/hypersolver/raspberry-pi-xdos/releases/tag/v0.6.2-rc3-xapp6-fileclr) · [繁體中文](source/v0.6.2-rc3-xapp6/FILECLR_ZH.md) · [English](source/v0.6.2-rc3-xapp6/FILECLR_EN.md)
+
+## FILESV2
+
+[Release](https://github.com/hypersolver/raspberry-pi-xdos/releases/tag/v0.6.2-rc3-xapp6-filesv2) · [繁體中文](source/v0.6.2-rc3-xapp6/FILESV2_ZH.md) · [English](source/v0.6.2-rc3-xapp6/FILESV2_EN.md)

@@ -30,3 +30,7 @@ MultiCore 為獨立效能預發行版。套件內 Pi 3B+ 的 1080p60 UART 紀錄
 ## FILECLR
 
 Pi 3B+ 已驗證開機、UART 開啟 Files 和 HDMI 配色。詳見[變更、安裝與實測](FILECLR_ZH.md)。
+
+## FILESV2
+
+Pi 3B+ 已驗證外部 Files V2 與 Notepad 並行。詳見[變更、操作及實測](FILESV2_ZH.md)。

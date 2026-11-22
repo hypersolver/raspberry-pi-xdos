@@ -27,3 +27,7 @@ The sizes describe the current build. Savings require a rebuilt image and regres
 ## FILECLR
 
 Pi 3B+ boot, Files launch over UART, and the HDMI color fix were verified. See [changes, installation and test results](FILECLR_EN.md).
+
+## FILESV2
+
+External Files V2 and Notepad ran concurrently on Pi 3B+. See [changes, operation and test records](FILESV2_EN.md).
