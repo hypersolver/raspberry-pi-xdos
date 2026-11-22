@@ -18,6 +18,8 @@ static XdosUartService &TerminalUart()
 #include "app_shortcut.h"
 #include "xapp_v2_runtime.h"
 #include "xdos_note_v2.h"
+#include "xdos_files_v2.h"
+#include "xdos_file_delete.h"
 #include "xapp_loader_v2.h"
 #include "xapp_loader.h"
 #include "storage.h"
@@ -717,7 +719,7 @@ void CKernel::UpdateNetworkStatus()
 
 void CKernel::Run()
 {
-    Debug("[XDOS] V0.6.2-RC3 XAPP6-PERF7-VC4-AnalyticsRegionGuard-FILECLR / Pi 3 ARM32\r\n");
+    Debug("[XDOS] V0.6.2-RC3 XAPP6-PERF7-VC4-AnalyticsRegionGuard-FILESV2 / Pi 3 ARM32\r\n");
 #if XDOS_USE_LVGL
     ui_.Initialize(&desktop_,debugSerialReady_ ? &serial_ : 0);
     static CVCHIQDevice gpu(CMemorySystem::Get(),&interrupt_);
@@ -810,8 +812,11 @@ void CKernel::Run()
         const auto shortcut=uart.TakeOpenRequest();
         const bool uartOpen=shortcut!=Shortcut::None;
 #if XDOS_USE_LVGL
+        bool v2ShortcutOpened=false;
+#endif
+#if XDOS_USE_LVGL
         const bool canOpen=ui_.AtDesktop() && !uart.TransferActive();
-        const char *fileModule = canOpen && !uartOpen ? ui_.TakeFileTreeLaunch() : nullptr;
+        const char *fileModule = canOpen && !uartOpen ? XdosFilesTakeLaunch() : nullptr;
         if (fileModule && desktop_.OpenCatalogModule(fileModule)) fileModule=nullptr;
         const auto power=desktop_.TakePowerRequest();
         if (power!=Desktop::PowerRequest::None && ui_.AtDesktop()) {
@@ -874,6 +879,16 @@ void CKernel::Run()
             }
         };
         v2api.base.struct_bytes = sizeof v2api;
+        static XdosFilesV2Api filesApi;
+        filesApi={api,XDOS_FILES_V2_CAPABILITY,xdos_directory_visit,XdosFilesPreview,
+                  [](const char *path) -> int { return XdosDeleteFile(path); },
+                  XdosFilesQueueLaunch,XdosFilesClaim,XdosFilesSetPanes};
+        filesApi.base.struct_bytes=sizeof filesApi;
+        const char *const filesPath="SD:/XDOS/INBOX/FVFILES.XAPP";
+        auto v2Host=[&](const char *path) {
+            return !strcasecmp(path,filesPath) ? &filesApi.base : &v2api.base;
+        };
+
         {   // XDOS_CORE_JOBS: V2 app runtime (core 0)
             XappV2Runtime::Service();
             if (debugSerialReady_) {
@@ -882,7 +897,7 @@ void CKernel::Run()
                     CString path;
                     path.Format("SD:/XDOS/INBOX/%s", name);
                     const int slot = storageMounted_ ?
-                        XappV2Runtime::Open((const char *)path, &v2api.base) : -1;
+                        XappV2Runtime::Open((const char *)path, v2Host(path)) : -1;
                     CString reply;
                     if (slot >= 0) reply.Format("@XDOS XAPP2 SLOT %d @XDOS OK\r\n", slot);
                     else reply.Format("@XDOS XAPP2 FAILED %d %s @XDOS ERROR\r\n", slot,
@@ -918,7 +933,8 @@ void CKernel::Run()
         if ((uartOpen ? shortcut==Shortcut::Notepad : desktop_.TakeNotepadRequest()) &&
             ui_.AtDesktop() && (!uartOpen || canOpen)) {
             const int slot = storageMounted_ ?
-                XappV2Runtime::Open("SD:/XDOS/INBOX/CLNOTE.XAPP", &v2api.base) : -1;
+                XappV2Runtime::Open("SD:/XDOS/INBOX/FVNOTE.XAPP", &v2api.base) : -1;
+            v2ShortcutOpened=slot>=0;
             desktop_.ReportAppResult(slot >= 0 ? "Notepad started" : "Notepad could not start");
         }
 #endif
@@ -934,6 +950,13 @@ void CKernel::Run()
             case Shortcut::Music: workspace=Desktop::MusicApp; break;
             default: workspace=Desktop::NoWorkspace; break;
             }
+        }
+        if (workspace==Desktop::FilesApp && canOpen) {
+            const int slot=storageMounted_ ? XappV2Runtime::Open(filesPath,&filesApi.base) : -1;
+            v2ShortcutOpened=slot>=0;
+            if (slot>=0) Debug("[FILES] External V2 window opened\r\n");
+            desktop_.ReportAppResult(slot>=0 ? "Files started" : "Files could not start");
+            workspace=Desktop::NoWorkspace;
         }
         if (workspace != Desktop::NoWorkspace && ui_.AtDesktop() && (!uartOpen || canOpen)) {
             XdosWorkspaceApi apiExt = {{{api, nullptr}, nullptr},
@@ -1002,19 +1025,30 @@ void CKernel::Run()
         if (fileModule) {
             const char *leaf=fileModule;
             for (const char *p=fileModule;*p;++p) if (*p=='/') leaf=p+1;
-            const auto result=XappLoaderV1::ExecuteFile(fileModule,&sketch.base);
-            if (result==XappLoaderV1::OK && !strcasecmp(leaf,"QNIMAGE.XAPP"))
+            FIL file;
+            uint32_t header[2]={};
+            UINT bytes=0;
+            if (f_open(&file,fileModule,FA_READ)==FR_OK) {
+                f_read(&file,header,sizeof header,&bytes);
+                f_close(&file);
+            }
+            const bool v2=bytes==sizeof header && !memcmp(header,"XDAP",4)
+                && header[1]==XDOS_XAPP_V2_ABI;
+            const bool started=v2 ? XappV2Runtime::Open(fileModule,v2Host(fileModule))>=0
+                : XappLoaderV1::ExecuteFile(fileModule,&sketch.base)==XappLoaderV1::OK;
+            if (started && !v2 && !strcasecmp(leaf,"QNIMAGE.XAPP"))
                 ui_.SetAppTaskTitle("Arduino IMAGE VIEW");
-            desktop_.ReportAppResult(result==XappLoaderV1::OK ?
+            desktop_.ReportAppResult(started ?
                 "XAPP: application started" : "XAPP: invalid or incompatible application");
         }
         if (const auto *app=desktop_.TakeDiscoveredApp()) {
             const bool notepad = !strcasecmp(app->path, "SD:/XDOS/APPS/NOTE.XAPP");
-            if (notepad || app->kind==XdosAppKind::CoreApp) {
+            const bool files=!strcasecmp(app->path,"SD:/XDOS/APPS/FILES.XAPP");
+            if (files || notepad || app->kind==XdosAppKind::CoreApp) {
                 // XDOS MC4: V2 app -> lowest free slot; it borrows a free core.
+                const char *path=files ? filesPath : notepad ? "SD:/XDOS/INBOX/FVNOTE.XAPP" : app->path;
                 const int slot = !uartOpen && canOpen && storageMounted_ ?
-                    XappV2Runtime::Open(notepad ? "SD:/XDOS/INBOX/CLNOTE.XAPP" : app->path,
-                                        &v2api.base) : -100;
+                    XappV2Runtime::Open(path, v2Host(path)) : -100;
                 CString line;
                 if (slot >= 0) line.Format("XAPP: %s started (slot %d)", app->name, slot);
                 else if (slot == -100) line = "XAPP: desktop busy";
@@ -1059,7 +1093,7 @@ void CKernel::Run()
                           accepted ? 15 : 13);
         }
         else if (shortcut==Shortcut::Close) uart.CompleteClose(serial_,ui_.CloseCurrentApp());
-        else if (uartOpen) uart.CompleteOpen(serial_,canOpen && !ui_.AtDesktop());
+        else if (uartOpen) uart.CompleteOpen(serial_,v2ShortcutOpened || (canOpen && !ui_.AtDesktop()));
         PollMusic();
         if (playerPath[0]) {
             const int result=RunQueuedVideo(debugSerialReady_ ? &serial_ : nullptr);
