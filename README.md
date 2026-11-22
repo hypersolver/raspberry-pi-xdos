@@ -2,7 +2,7 @@
 
 [繁體中文](README_ZH.md) · [Latest prerelease](https://github.com/hypersolver/raspberry-pi-xdos/releases/tag/v0.6.2-rc3-xapp6-pxlayout) · [Base XAPP6 Release](https://github.com/hypersolver/raspberry-pi-xdos/releases/tag/v0.6.2-rc3-xapp6)
 
-XDOS is an ARM32 bare-metal desktop for Raspberry Pi. Circle provides the hardware support, LVGL draws the desktop, and the system loads external XAPPs from microSD. The current public prerelease, PXLAYOUT, was tested on a Raspberry Pi 3B+ at 1280×720 and 1920×1080.
+XDOS is an ARM32 bare-metal desktop for Raspberry Pi. Circle provides the hardware support, LVGL draws the desktop, and the system loads external XAPPs from microSD. The earlier PXLAYOUT prerelease, was tested on a Raspberry Pi 3B+ at 1280×720 and 1920×1080.
 
 ## RPiDuino Arduino SDK
 
@@ -88,3 +88,5 @@ The PXLAYOUT core image is 1,491,628 bytes. Download the matching XAPPs and SHA-
 The architecture can support embedded status panels, offline utility desktops and bare-metal teaching or test benches. Optional media modules and more device drivers are candidates for future work. MP3 playback, 1080p video decoding and audio capture are tracked separately from the public desktop release, with their current limitations documented in the development notes.
 
 Documentation and source are maintained on main. Release tags identify published builds.
+
+**FILEQ128 and RPiDuino 0.1.4 preview** · [Setup, changes and validation](docs/fileq128.md) · [Release](https://github.com/hypersolver/raspberry-pi-xdos/releases/tag/v0.6.2-rc3-xapp6-fileq128)

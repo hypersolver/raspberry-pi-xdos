@@ -2,6 +2,7 @@
 import argparse
 from pathlib import Path
 import secrets
+import struct
 import time
 import zlib
 
@@ -33,8 +34,9 @@ def exchange(port, command, expected="@XDOS OK", timeout=5):
     raise TimeoutError(f"No XDOS reply to {operation}")
 
 
-def deploy(port, data, cdc_board=None):
-    name = f"A{secrets.token_hex(4)[:7].upper()}.IMG"
+def deploy(port, data, cdc_board=None, xapp=False):
+    suffix = "XAPP" if xapp else "IMG"
+    name = f"A{secrets.token_hex(4)[:7].upper()}.{suffix}"
     crc = zlib.crc32(data)
     exchange(port, "PING", "@XDOS READY 1")
     if cdc_board is not None:
@@ -51,6 +53,9 @@ def deploy(port, data, cdc_board=None):
         except (OSError, RuntimeError):
             pass
         raise
+    if xapp:
+        print(f"Uploaded and verified SD:/XDOS/INBOX/{name}. Open it from XDOS Files.")
+        return
     print("Receiver verified the transfer. Selecting the new kernel...", flush=True)
     exchange(port, f"BOOT {name} {crc:08x}", timeout=25)
     backup = "rpiduino-config.bak" if cdc_board else "xdosboot.bak"
@@ -65,14 +70,22 @@ def main():
     parser.add_argument("image", type=Path)
     parser.add_argument("--baud", type=int, choices=(115200, 921600), default=921600)
     parser.add_argument("--cdc-board", type=int, choices=(4, 5))
+    parser.add_argument("--xapp", action="store_true")
     args = parser.parse_args()
     try:
         if not 0 < args.image.stat().st_size <= 16 * 1024 * 1024:
             raise ValueError("XDOS requires an IMG between 1 byte and 16 MiB")
         data = args.image.read_bytes()
+        if args.xapp:
+            if args.cdc_board or not 32 < len(data) <= 320 * 1024:
+                raise ValueError("Invalid XDOS XAPP size or transport")
+            magic, abi, header, length, entry, flags, _, _ = struct.unpack("<4s7I",data[:32])
+            if (magic, abi, header, length, flags) != (b"XDAP", 1, 32, len(data), 1) or \
+                    entry & 3 or not header <= entry < length:
+                raise ValueError("Invalid XDOS XAPP header")
         with serial.Serial(args.port, args.baud, timeout=0.2, write_timeout=3) as port:
             port.reset_input_buffer()
-            deploy(port, data, args.cdc_board)
+            deploy(port, data, args.cdc_board, args.xapp)
     except (OSError, ValueError, RuntimeError) as error:
         raise SystemExit(f"RPiDuino UART upload failed: {error}") from None
 

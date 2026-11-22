@@ -26,6 +26,10 @@ if widget_example not in widget_titles:
 apps = (("LVGLDEMO", widget_example, widget_titles[widget_example]),
         ("LVGLBENCH", "LVGLBenchmarkDemo", "LVGL Benchmark"),
         ("TERMINAL", None, "Terminal"))
+if os.environ.get("XDOS_DESKTOP_SAMPLES") == "1":
+    apps += (("LEDBLINK", "XappBlink", "LED Blink"),
+             ("ARDLVGL", "XappLvgl", "Arduino LVGL"),
+             ("IMGVIEW", "XappImageView", "Arduino IMAGE VIEW"))
 browser_external = os.environ.get("XDOS_BROWSER_XAPP") == "1"
 if browser_external:
     apps += (("BROWSER", None, "Browser"),)
@@ -113,15 +117,16 @@ void lv_demo_benchmark_set_end_cb("""
             text = text.replace(before, after)
         bench.write_text(text, encoding="utf-8")
 
-    shutil.copyfile(tools / "benchmark_report.inc", source / "benchmark_report.inc")
-    kernel = source / "kernel.cpp"
-    kernel.write_text(kernel.read_text(encoding="utf-8").replace(
+    if '#include "benchmark_report.inc"' not in (source / "kernel.cpp").read_text(encoding="utf-8"):
+        shutil.copyfile(tools / "benchmark_report.inc", source / "benchmark_report.inc")
+        kernel = source / "kernel.cpp"
+        kernel.write_text(kernel.read_text(encoding="utf-8").replace(
         '#include "uart_service.h"', '#include "uart_service.h"\n#include "benchmark_report.inc"'),
         encoding="utf-8")
-    uart = source / "uart_service.h"
-    uart.write_text(uart.read_text(encoding="utf-8").replace(
+        uart = source / "uart_service.h"
+        uart.write_text(uart.read_text(encoding="utf-8").replace(
         "class XdosUartService {", "void XdosPrintBenchmarkReport(CSerialDevice &serial);\n\nclass XdosUartService {"
-    ).replace(
+        ).replace(
         '        if (!strcmp(cmd, "LVGL")) {',
         '''        if (!strcmp(cmd, "BENCH-RESULT")) {
             XdosPrintBenchmarkReport(serial);
@@ -132,7 +137,7 @@ void lv_demo_benchmark_set_end_cb("""
     flags = ["-Os", "-mcpu=cortex-a53", "-marm", "-mfloat-abi=hard", "-mfpu=neon-vfpv4",
              "-ffreestanding", "-ffunction-sections", "-fdata-sections", "-fno-unwind-tables",
              "-fno-asynchronous-unwind-tables", "-DRASPPI=3", "-DAARCH=32",
-             "-DLV_CONF_INCLUDE_SIMPLE", "-I", work, "-I", lvgl, "-I", circle / "include",
+             "-DLV_CONF_INCLUDE_SIMPLE", "-I", work, "-I", lvgl, "-I", circle / "include", "-I", circle / "addon",
              "-I", source, "-I", source / "xdos_arduino", "-I", tools]
 
     def compile_c(path):
@@ -163,9 +168,14 @@ void lv_demo_benchmark_set_end_cb("""
             run("arm-none-eabi-g++", *flags, "-x", "c++", "-std=c++17", "-DRPIDUINO_LVGL_HOST_TIMER",
                 *sketch_flags, "-c", project / f"arduino-demos/{sketch}/{sketch}.ino", "-o", sketch_obj)
             options = ["-DXDOS_BENCHMARK_SKETCH"] if app == "LVGLBENCH" else []
+            if app == "LEDBLINK":
+                options.append("-DXDOS_LED_BLINK_SKETCH")
+            if app == "IMGVIEW":
+                options.append("-DXDOS_IMAGE_VIEW_SKETCH")
             run("arm-none-eabi-g++", *flags, "-std=c++17", *options,
                 "-c", tools / "sketch_xapp.cpp", "-o", entry_obj)
-            objects = widgets + (benchmark + [font26] if options else [])
+            objects = (widgets if app == "LVGLDEMO" else
+                       widgets + benchmark + [font26] if app == "LVGLBENCH" else [])
             inputs = [sketch_obj, entry_obj, *objects]
         combined = work / f"{app}.rel.o"
         (work / f"{app}.inputs").write_text(
@@ -200,7 +210,7 @@ def finish():
             raise RuntimeError(f"{app}: kernel is missing imports {sorted(missing)}")
         bindings = "\n".join(f"{name} = 0x{symbols[name]:x};" for name in sorted(imports(obj)))
         script = work / f"{app}.ld"
-        needs_file_end = app in ("BROWSER", "TERMINAL") or (
+        needs_file_end = app in ("BROWSER", "TERMINAL", "LEDBLINK", "ARDLVGL", "IMGVIEW") or (
             app == "LVGLDEMO" and widget_example != "LVGLWidgetsDemo")
         file_end_padding = "BYTE(0)" if needs_file_end else ""
         script.write_text(f"""OUTPUT_FORMAT("elf32-littlearm")

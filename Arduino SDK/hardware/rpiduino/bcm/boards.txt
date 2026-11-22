@@ -31,3 +31,10 @@ rpiduino5.build.bits=64
 rpiduino5.build.cpu=cortex-a76
 rpiduino5.upload.tool.serial=usb_cdc
 rpiduino5.upload.protocol=usb_cdc
+
+menu.target=Build target
+rpiduino3.menu.target.native=Standalone IMG
+rpiduino3.menu.target.xapp=XDOS XAPP
+rpiduino3.menu.target.xapp.build.mode=xapp
+rpiduino3.menu.target.xapp.build.extension=xapp
+rpiduino3.menu.target.xapp.upload.tool.serial=xdos_xapp

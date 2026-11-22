@@ -16,6 +16,7 @@ def run(*args, cwd=None):
 
 
 def linux_path(value):
+    value = os.fspath(value)
     if value.lower() == "nul" or value == "/dev/null":
         return "/dev/null"
     if not WINDOWS:
@@ -80,21 +81,49 @@ def link(model, bits, prefix, output, archive, objects):
 
 
 def main():
-    model, bits, cpu, action, *args = sys.argv[1:]
+    model, bits, cpu, mode, action, *args = sys.argv[1:]
     prefix = "arm-none-eabi-" if bits == "32" else "aarch64-linux-gnu-"
     launcher = ["wsl.exe", "--exec"] if WINDOWS else []
 
     if action in ("cc", "cxx"):
         driver = "gcc" if action == "cc" else "g++"
         architecture = ["-marm", "-mfloat-abi=hard", "-mfpu=neon-vfpv4"] if bits == "32" else []
-        run(*launcher, prefix + driver, f"-mcpu={cpu}", *architecture, *compiler_args(args))
+        xapp_flags = []
+        if mode == "xapp":
+            xapp_flags.extend(("-DRPIDUINO_XDOS_XAPP=1", "-DRPIDUINO_LVGL_HOST_TIMER=1",
+                               "-DLV_CONF_INCLUDE_SIMPLE", "-fno-unwind-tables",
+                               "-fno-asynchronous-unwind-tables"))
+            sdk = os.environ.get("RPIDUINO_XDOS_HEADERS", Path(__file__).with_name("xapp-headers"))
+            if sdk:
+                base = Path(sdk)
+                for child in ("", "lvgl", "addon", "include"):
+                    path = base / child
+                    if path.is_dir():
+                        xapp_flags.append("-I" + linux_path(str(path)))
+        run(*launcher, prefix + driver, f"-mcpu={cpu}", *architecture, *xapp_flags, *compiler_args(args))
     elif action == "ar":
         run(*launcher, prefix + "ar", "rcs", *(linux_path(arg) for arg in args))
     elif action == "image":
         run(*launcher, prefix + "objcopy", "-O", "binary", *(linux_path(arg) for arg in args))
     elif action == "link":
-        if WINDOWS:
-            run(*launcher, "python3", linux_path(__file__), model, bits, cpu, action,
+        if mode == "xapp":
+            host = os.environ.get("RPIDUINO_XDOS_HOST")
+            if args[0] == "--host":
+                host = args[1]
+                args = args[2:]
+            if not host:
+                host = Path(__file__).with_name("xapp-host.json")
+            if not Path(host).is_file():
+                raise ValueError("Set RPIDUINO_XDOS_HOST to the paired xapp-host.json")
+            if WINDOWS:
+                run(*launcher, "python3", linux_path(__file__), model, bits, cpu, mode, action,
+                    "--host", linux_path(host), *(linux_path(arg) for arg in args))
+            else:
+                from xapp_link import link_xapp
+                output, _, *objects = args
+                link_xapp(output, objects, host)
+        elif WINDOWS:
+            run(*launcher, "python3", linux_path(__file__), model, bits, cpu, mode, action,
                 *(linux_path(arg) for arg in args))
         else:
             output, archive, *objects = args
@@ -106,5 +135,5 @@ def main():
 if __name__ == "__main__":
     try:
         main()
-    except (OSError, subprocess.CalledProcessError) as error:
+    except (OSError, ValueError, subprocess.CalledProcessError) as error:
         raise SystemExit(f"RPiDuino build failed: {error}") from error

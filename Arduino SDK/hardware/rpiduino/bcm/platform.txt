@@ -1,8 +1,10 @@
 name=RPiDuino
-version=0.1.2
+version=0.1.4
 rpiduino.python=python3
 rpiduino.python.windows=python
-rpiduino.tool="{rpiduino.python}" "{runtime.platform.path}/tools/build.py" {build.model} {build.bits} {build.cpu}
+rpiduino.tool="{rpiduino.python}" "{runtime.platform.path}/tools/build.py" {build.model} {build.bits} {build.cpu} {build.mode}
+build.mode=native
+build.extension=img
 compiler.warning_flags=
 compiler.warning_flags.none=
 compiler.warning_flags.default=
@@ -16,9 +18,11 @@ recipe.S.o.pattern={rpiduino.tool} cc -x assembler-with-cpp -MMD -c {compiler.co
 recipe.preproc.macros={rpiduino.tool} cxx -x c++ -E -CC {compiler.common} {compiler.cpp} {includes} "{source_file}" -o "{preprocessed_file_path}"
 recipe.ar.pattern={rpiduino.tool} ar "{archive_file_path}" "{object_file}"
 recipe.c.combine.pattern={rpiduino.tool} link "{build.path}/{build.project_name}.elf" "{archive_file_path}" {object_files}
-recipe.objcopy.img.pattern={rpiduino.tool} image "{build.path}/{build.project_name}.elf" "{build.path}/{build.project_name}.img"
-recipe.output.tmp_file={build.project_name}.img
-recipe.output.save_file={build.project_name}.{build.board}.img
+recipe.objcopy.img.pattern={rpiduino.tool} image "{build.path}/{build.project_name}.elf" "{build.path}/{build.project_name}.{build.extension}"
+recipe.output.tmp_file={build.project_name}.{build.extension}
+recipe.output.save_file={build.project_name}.{build.board}.{build.extension}
 
-tools.xdos_uart.upload.pattern="{rpiduino.python}" "{runtime.platform.path}/tools/upload.py" "{upload.port.address}" "{build.path}/{build.project_name}.img"
-tools.usb_cdc.upload.pattern="{rpiduino.python}" "{runtime.platform.path}/tools/upload.py" "{upload.port.address}" "{build.path}/{build.project_name}.img" --cdc-board {build.model}
+tools.xdos_uart.upload.pattern="{rpiduino.python}" "{runtime.platform.path}/tools/upload.py" "{upload.port.address}" "{build.path}/{build.project_name}.{build.extension}"
+tools.usb_cdc.upload.pattern="{rpiduino.python}" "{runtime.platform.path}/tools/upload.py" "{upload.port.address}" "{build.path}/{build.project_name}.{build.extension}" --cdc-board {build.model}
+
+tools.xdos_xapp.upload.pattern="{rpiduino.python}" "{runtime.platform.path}/tools/upload.py" "{upload.port.address}" "{build.path}/{build.project_name}.xapp" --xapp

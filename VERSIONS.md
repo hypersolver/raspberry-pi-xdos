@@ -29,3 +29,5 @@
 PXLAYOUT 之後的媒體測試、限制及回退狀態見[研發與驗證紀錄](source/v0.6.2-rc3-xapp6/DEVELOPMENT_ZH.md)。
 
 V0.5 和 V0.5.2 的來源辨識、核心雜湊與使用方式見[早期版本復原紀錄](archive/PI4_RECOVERY_ZH.md)。
+
+**FILEQ128 預覽版與 RPiDuino 0.1.4** · [安裝、更新與研發紀錄](docs/fileq128.zh-TW.md) · [Release](https://github.com/hypersolver/raspberry-pi-xdos/releases/tag/v0.6.2-rc3-xapp6-fileq128)

@@ -30,6 +30,18 @@ def main():
                 )
                 package.writestr(entry, path.read_bytes(), zipfile.ZIP_DEFLATED)
 
+        demos = SDK.parent / "source/v0.6.2-rc3-xapp6/arduino-demos"
+        for name in ("XappBasic", "XappBlink", "XappLvgl", "XappImageView"):
+            sketch = demos / name / f"{name}.ino"
+            entry = zipfile.ZipInfo(
+                f"rpiduino-bcm-{version}/libraries/RPiDuinoBasics/examples/XDOS/{name}/{name}.ino"
+            )
+            package.writestr(entry, sketch.read_bytes(), zipfile.ZIP_DEFLATED)
+        entry = zipfile.ZipInfo(
+            f"rpiduino-bcm-{version}/libraries/RPiDuinoBasics/examples/XDOS/README.md"
+        )
+        package.writestr(entry, (SDK / "XDOS-SAMPLES.md").read_bytes(), zipfile.ZIP_DEFLATED)
+
     contents = archive.read_bytes()
     platform = {
         "name": "RPiDuino",

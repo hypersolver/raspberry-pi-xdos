@@ -71,3 +71,5 @@ XDOS 是將 XD OS 移植到 Raspberry Pi 的 ARM32 裸機桌面系統。以 Circ
 版本細節、歷史檔案與驗證狀態見 [版本總覽](VERSIONS.md)、[早期版本復原紀錄](archive/PI4_RECOVERY_ZH.md) 和 [HDMI Auto 實測說明](source/v0.6.2-rc3-xapp6/HDMI_AUTO_ZH.md)。早期 V0.1–V0.3 建置與開機方式見 [歷史操作手冊](OPERATIONS.md)。
 
 原始碼與文件維護於 `main`，各版以 Git 標籤和 Releases 查找。[發布流程](RELEASING.md) · [授權及第三方元件](LICENSE.md)
+
+**FILEQ128 預覽版與 RPiDuino 0.1.4** · [安裝、更新與研發紀錄](docs/fileq128.zh-TW.md) · [Release](https://github.com/hypersolver/raspberry-pi-xdos/releases/tag/v0.6.2-rc3-xapp6-fileq128)
