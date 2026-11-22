@@ -43,3 +43,7 @@ External Files V2 and Notepad ran concurrently on Pi 3B+. See [changes, operatio
 ## FVCORE2
 
 [R16-B scheduling, operation and Pi 3B+ test and rollback record](FVCORE2_EN.md).
+
+## FVR17
+
+[Dynamic imports, identical uploads and Pi 3B+ validation](FVR17_EN.md).
