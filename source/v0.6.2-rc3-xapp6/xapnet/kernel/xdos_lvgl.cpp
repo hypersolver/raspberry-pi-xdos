@@ -1075,9 +1075,9 @@ void XDOSLVGL::AddFileTreeNode(lv_obj_t *parent,lv_obj_t *preview,XDOSLVGL *ui,
     lv_obj_remove_flag(group,LV_OBJ_FLAG_SCROLLABLE);
     lv_obj_set_size(group,lv_pct(100),LV_SIZE_CONTENT);
     auto *button=lv_button_create(group);
-    StyleWindowSurface(button,0x294A6A,0xFFFFFF,0xB6C4D3,1);
-    lv_obj_set_style_bg_color(button,lv_color_hex(0xFFFFFF),LV_STATE_CHECKED);
-    lv_obj_set_style_text_color(button,lv_color_hex(0x203047),LV_STATE_CHECKED);
+    StyleWindowSurface(button,0xFFFFFF,0x203047,0xB6C4D3,1);
+    lv_obj_set_style_bg_color(button,lv_color_hex(0x1F5FAF),LV_STATE_CHECKED);
+    lv_obj_set_style_text_color(button,lv_color_hex(0xFFFFFF),LV_STATE_CHECKED);
     lv_obj_set_style_pad_all(button,4,0);
     lv_obj_set_size(button,lv_pct(100),27);
     auto *name=lv_label_create(button);
@@ -1232,6 +1232,8 @@ void XDOSLVGL::OpenFileTree(lv_obj_t *body)
     auto *browser=new FileBrowser{};
     if (!browser) return;
     browser->ui=this;
+    lv_obj_set_style_bg_color(body,lv_color_hex(0xFFFFFF),0);
+    lv_obj_set_style_bg_opa(body,LV_OPA_COVER,0);
     activeFileBrowser = browser;
     lv_obj_add_event_cb(body,[](lv_event_t *event) {
         auto *browser = static_cast<FileBrowser *>(lv_event_get_user_data(event));
@@ -1304,7 +1306,7 @@ void XDOSLVGL::OpenFileTree(lv_obj_t *body)
     const int paneHeight=LV_MAX(100,lv_obj_get_height(body)-92);
     auto *tree=browser->tree=lv_obj_create(body);
     StyleTreeColumn(tree);
-    lv_obj_set_style_bg_color(tree,lv_color_hex(0xE7EFF5),0);
+    lv_obj_set_style_bg_color(tree,lv_color_hex(0xFFFFFF),0);
     lv_obj_set_style_bg_opa(tree,LV_OPA_COVER,0);
     lv_obj_set_style_pad_all(tree,5,0);
     lv_obj_set_size(tree,lv_pct(27),paneHeight);

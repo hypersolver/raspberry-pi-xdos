@@ -23,3 +23,7 @@ The released kernel is 1,491,628 bytes. Its .text is 1,240,776 bytes and its .ro
 4. Profile runtime RAM separately. A 1920×1080 RGB565 canvas takes about 3.96 MiB, and two 128-row partial refresh buffers take about 0.94 MiB.
 
 The sizes describe the current build. Savings require a rebuilt image and regression testing with its matching XAPPs.
+
+## FILECLR
+
+Pi 3B+ boot, Files launch over UART, and the HDMI color fix were verified. See [changes, installation and test results](FILECLR_EN.md).

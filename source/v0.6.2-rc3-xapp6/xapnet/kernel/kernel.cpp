@@ -717,7 +717,7 @@ void CKernel::UpdateNetworkStatus()
 
 void CKernel::Run()
 {
-    Debug("[XDOS] V0.6.2-RC3 XAPP6-PERF7-VC4-AnalyticsRegionGuard-FILEDBL / Pi 3 ARM32\r\n");
+    Debug("[XDOS] V0.6.2-RC3 XAPP6-PERF7-VC4-AnalyticsRegionGuard-FILECLR / Pi 3 ARM32\r\n");
 #if XDOS_USE_LVGL
     ui_.Initialize(&desktop_,debugSerialReady_ ? &serial_ : 0);
     static CVCHIQDevice gpu(CMemorySystem::Get(),&interrupt_);
@@ -918,7 +918,7 @@ void CKernel::Run()
         if ((uartOpen ? shortcut==Shortcut::Notepad : desktop_.TakeNotepadRequest()) &&
             ui_.AtDesktop() && (!uartOpen || canOpen)) {
             const int slot = storageMounted_ ?
-                XappV2Runtime::Open("SD:/XDOS/INBOX/DBNOTE.XAPP", &v2api.base) : -1;
+                XappV2Runtime::Open("SD:/XDOS/INBOX/CLNOTE.XAPP", &v2api.base) : -1;
             desktop_.ReportAppResult(slot >= 0 ? "Notepad started" : "Notepad could not start");
         }
 #endif
@@ -1013,7 +1013,7 @@ void CKernel::Run()
             if (notepad || app->kind==XdosAppKind::CoreApp) {
                 // XDOS MC4: V2 app -> lowest free slot; it borrows a free core.
                 const int slot = !uartOpen && canOpen && storageMounted_ ?
-                    XappV2Runtime::Open(notepad ? "SD:/XDOS/INBOX/DBNOTE.XAPP" : app->path,
+                    XappV2Runtime::Open(notepad ? "SD:/XDOS/INBOX/CLNOTE.XAPP" : app->path,
                                         &v2api.base) : -100;
                 CString line;
                 if (slot >= 0) line.Format("XAPP: %s started (slot %d)", app->name, slot);

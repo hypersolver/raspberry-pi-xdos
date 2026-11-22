@@ -26,3 +26,7 @@ MultiCore 為獨立效能預發行版。套件內 Pi 3B+ 的 1080p60 UART 紀錄
 ### Music 實驗版操作
 
 將 MP3 或 WAV 放入 SD 根目錄、XDOS/INBOX 或 XDOS/MUSIC。桌面開啟 Music，選檔後按 HDMI 或 3.5 MM，按 STOP 停止。UART 可用 OPEN MUSIC 開啟，AUDIOCHK 另可輸入 AUDIO 讀取 PWM 暫存器與 FIFO 取樣摘要。公開 PXLAYOUT 的 UART 指令見[指令指南](UART_ZH.md)。
+
+## FILECLR
+
+Pi 3B+ 已驗證開機、UART 開啟 Files 和 HDMI 配色。詳見[變更、安裝與實測](FILECLR_ZH.md)。
