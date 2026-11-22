@@ -15,9 +15,44 @@ flags=(-Os -mcpu=cortex-a53 -marm -mfloat-abi=hard -mfpu=neon-vfpv4 -ffreestandi
 for app in files notepad calculator paint terminal; do
     arm-none-eabi-g++ "${flags[@]}" -c "$src/apps/$app.cpp" -o "$work/$app.o"
 done
-arm-none-eabi-nm -u "$work/files.o" "$work/notepad.o" "$work/calculator.o" "$work/paint.o" "$work/terminal.o" | awk '$1=="U" {print "LDFLAGS += --undefined=" $2}' | sort -u >> "$sample/xapp-imports.mk"
+arm-none-eabi-g++ "${flags[@]}" -c "$src/apps/media.cpp" -o "$work/video.o"
+arm-none-eabi-g++ "${flags[@]}" -DXDOS_MUSIC_APP -c "$src/apps/media.cpp" -o "$work/music.o"
+arm-none-eabi-g++ "${flags[@]}" -I "$circle/addon" -c "$sample/webtask.cpp" -o "$work/webtask.o"
+arm-none-eabi-g++ "${flags[@]}" -c "$src/apps/browser.cpp" -o "$work/browser-ui.o"
+arm-none-eabi-ld -r -o "$work/browser.o" "$work/browser-ui.o" "$work/webtask.o"
+mkdir -p "$work/demo-conf"
+sed -E 's/(#define (LV_USE_DEMO_WIDGETS|LV_USE_DEMO_BENCHMARK|LV_FONT_MONTSERRAT_26) +)0/\11/' "$circle/addon/lvgl/lv_conf.h" > "$work/demo-conf/lv_conf.h"
+demo_flags=(-I "$work/demo-conf" -I "$sample/xdos_arduino" "${flags[@]}" -Wno-unused-parameter)
+mapfile -t widget_sources < <(find "$circle/addon/lvgl/lvgl/demos/widgets" -name '*.c' | sort)
+mapfile -t benchmark_sources < <(find "$circle/addon/lvgl/lvgl/demos/benchmark" -name '*.c' | sort)
+widget_objects=()
+benchmark_objects=()
+cflags=()
+for flag in "${demo_flags[@]}"; do
+    case "$flag" in -fno-rtti|-fno-exceptions) ;; *) cflags+=("$flag");; esac
+done
+for source in "${widget_sources[@]}" "${benchmark_sources[@]}" "$circle/addon/lvgl/lvgl/src/font/lv_font_montserrat_26.c"; do
+    obj="$work/$(basename "$source" .c).o"
+    arm-none-eabi-gcc "${cflags[@]}" -c "$source" -o "$obj"
+    case "$source" in */demos/widgets/*) widget_objects+=("$obj");; *) benchmark_objects+=("$obj");; esac
+done
+for app in widgets benchmark; do
+    if [[ $app == widgets ]]; then
+        sketch=LVGLWidgetsDemo
+        app_objects=("${widget_objects[@]}")
+        extra=()
+    else
+        sketch=LVGLBenchmarkDemo
+        app_objects=("${widget_objects[@]}" "${benchmark_objects[@]}")
+        extra=(-DXDOS_BENCHMARK_SKETCH)
+    fi
+    arm-none-eabi-g++ "${demo_flags[@]}" -DRPIDUINO_LVGL_HOST_TIMER -x c++ -c "$src/../arduino-demos/$sketch/$sketch.ino" -o "$work/$app-sketch.o"
+    arm-none-eabi-g++ "${demo_flags[@]}" "${extra[@]}" -c "$src/../tools/rc3-uart/sketch_xapp.cpp" -o "$work/$app-entry.o"
+    arm-none-eabi-ld -r -o "$work/$app.o" "$work/$app-sketch.o" "$work/$app-entry.o" "${app_objects[@]}"
+done
+arm-none-eabi-nm -u "$work/files.o" "$work/notepad.o" "$work/calculator.o" "$work/paint.o" "$work/terminal.o" "$work/video.o" "$work/music.o" "$work/browser.o" "$work/widgets.o" "$work/benchmark.o" | awk '$1=="U" {print "LDFLAGS += --undefined=" $2}' | sort -u >> "$sample/xapp-imports.mk"
 make -C "$sample" -j4
-cp "$sample/kernel8-32.img" "$out/FVAPPS.IMG"
+cp "$sample/kernel8-32.img" "$out/FVMEDIA.IMG"
 cp "$sample/kernel8-32.elf" "$out/kernel8-32.elf"
 PYTHONPATH="$tool" "${PACK_PYTHON:-python3}" - "$work" "$out" <<'PY'
 from pathlib import Path
@@ -25,8 +60,9 @@ import sys
 import xapp_v2_pack as packer
 work,out=map(Path,sys.argv[1:])
 symbols=packer.kernel_symbols(out/'kernel8-32.elf')
-fp=packer.kernel_fingerprint(symbols,out/'FVAPPS.IMG')
-for source,target in [('files','FAFILES.XAPP'),('notepad','FANOTE.XAPP'),('calculator','FACALC.XAPP'),('paint','FAPAINT.XAPP'),('terminal','FATERM.XAPP')]:
+fp=packer.kernel_fingerprint(symbols,out/'FVMEDIA.IMG')
+for source,target in [('files','V7FILES.XAPP'),('notepad','V7NOTE.XAPP'),('calculator','V7CALC.XAPP'),('paint','V7PAINT.XAPP'),('terminal','V7TERM.XAPP'),('video','V7VIDEO.XAPP'),('music','V7MUSIC.XAPP'),('browser','V7BROWSE.XAPP'),('widgets','V7WIDGET.XAPP'),('benchmark','V7BENCH.XAPP')]:
+    packer.SLOT_BYTES=(768 if source=='benchmark' else 320)*1024
     print(target, packer.pack([work/(source+'.o')],symbols,fp,out/target))
 PY
-(cd "$out" && sha256sum FVAPPS.IMG FAFILES.XAPP FANOTE.XAPP FACALC.XAPP FAPAINT.XAPP FATERM.XAPP > SHA256SUMS.txt)
+(cd "$out" && sha256sum FVMEDIA.IMG V7FILES.XAPP V7NOTE.XAPP V7CALC.XAPP V7PAINT.XAPP V7TERM.XAPP V7VIDEO.XAPP V7MUSIC.XAPP V7BROWSE.XAPP V7WIDGET.XAPP V7BENCH.XAPP > SHA256SUMS.txt)

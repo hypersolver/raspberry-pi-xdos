@@ -917,7 +917,9 @@ extern "C" bool xdos_files_wheel(int x, int y, int delta)
 {
     if (!filesPanes[0]) return false;
     lv_point_t point{x,y};
-    auto *target=lv_indev_search_obj(lv_layer_top(),&point);
+    if (lv_obj_get_screen(filesPanes[0])!=lv_screen_active()) return false;
+    if (lv_indev_search_obj(lv_layer_top(),&point)) return false;
+    auto *target=lv_indev_search_obj(lv_screen_active(),&point);
     for (; target; target=lv_obj_get_parent(target)) {
         if (target!=filesPanes[0] && target!=filesPanes[1]) continue;
         auto *pane=target;

@@ -17,9 +17,12 @@ static XdosUartService &TerminalUart()
 #include "xdos_arduino/xdos_arduino_runtime.h"
 #include "app_shortcut.h"
 #include "xapp_v2_runtime.h"
+#include "xdos_corejobs.h"
 #include "xdos_note_v2.h"
 #include "xdos_files_v2.h"
 #include "xdos_terminal_v2.h"
+#include "xdos_media_v2.h"
+#include "xdos_browser_v2.h"
 #include "xdos_file_delete.h"
 #include "xapp_loader_v2.h"
 #include "xapp_loader.h"
@@ -654,11 +657,13 @@ void CKernel::DrawCursor()
 }
 
 namespace {
+bool browserV2Claimed,browserV2Busy;
+int fullscreenV2Slot=-1;
 class BrowserXappJob : public CTask {
 public:
     BrowserXappJob(XdosBrowserFetch fetch,CNetSubSystem *network,Desktop *desktop,
-                   const char *url,unsigned id)
-    : fetch_(fetch),network_(network),desktop_(desktop),id_(id)
+                   const char *url,unsigned id,bool v2=false)
+    : fetch_(fetch),network_(network),desktop_(desktop),id_(id),v2_(v2)
     {
         strcpy(url_,url);
         SetName("browser-xapp");
@@ -668,7 +673,8 @@ public:
     {
         if (XDOS_TEST_DEBUG) CLogger::Get()->Write("BROWSER",LogWarning,"XAPP HTTP request started");
         fetch_(network_,desktop_,url_,id_);
-        XappLoaderV1::ReleaseSlot();
+        if (v2_) browserV2Busy=false;
+        else XappLoaderV1::ReleaseSlot();
         if (XDOS_TEST_DEBUG) CLogger::Get()->Write("BROWSER",LogWarning,"XAPP HTTP request finished");
     }
 
@@ -677,6 +683,7 @@ private:
     CNetSubSystem *network_;
     Desktop *desktop_;
     unsigned id_;
+    bool v2_;
     char url_[192];
 };
 }
@@ -720,7 +727,7 @@ void CKernel::UpdateNetworkStatus()
 
 void CKernel::Run()
 {
-    Debug("[XDOS] V0.6.2-RC3 XAPP6-PERF7-VC4-AnalyticsRegionGuard-FVAPPS / Pi 3 ARM32\r\n");
+    Debug("[XDOS] V0.6.2-RC3 XAPP6-PERF7-VC4-AnalyticsRegionGuard-FVMEDIA / Pi 3 ARM32\r\n");
 #if XDOS_USE_LVGL
     ui_.Initialize(&desktop_,debugSerialReady_ ? &serial_ : 0);
     static CVCHIQDevice gpu(CMemorySystem::Get(),&interrupt_);
@@ -885,7 +892,7 @@ void CKernel::Run()
                   [](const char *path) -> int { return XdosDeleteFile(path); },
                   XdosFilesQueueLaunch,XdosFilesClaim,XdosFilesSetPanes};
         filesApi.base.struct_bytes=sizeof filesApi;
-        const char *const filesPath="SD:/XDOS/INBOX/FAFILES.XAPP";
+        const char *const filesPath="SD:/XDOS/INBOX/V7FILES.XAPP";
         static XdosTerminalV2Api terminalApi;
         terminalApi={api,XDOS_TERMINAL_V2_CAPABILITY,
             [](void *opaque,const char *text) -> int32_t {
@@ -914,14 +921,65 @@ void CKernel::Run()
             [](void *ctx) { return static_cast<CKernel *>(ctx)->desktop_.TerminalText(); }
         };
         terminalApi.base.struct_bytes=sizeof terminalApi;
-        const char *const terminalPath="SD:/XDOS/INBOX/FATERM.XAPP";
+        const char *const terminalPath="SD:/XDOS/INBOX/V7TERM.XAPP";
+        const char *const playerPathV2="SD:/XDOS/INBOX/V7VIDEO.XAPP";
+        const char *const musicPathV2="SD:/XDOS/INBOX/V7MUSIC.XAPP";
+        static XdosMediaV2Api videoApi,musicApi;
+        videoApi={api,XDOS_MEDIA_V2_CAPABILITY,xdos_directory_visit,
+                  [](const char *path) { return QueueVideo(path) ? 0 : -1; },nullptr,nullptr};
+        musicApi={api,XDOS_MEDIA_V2_CAPABILITY,xdos_directory_visit,
+                  [](const char *path) { return StartMusic(path,VCHIQSoundDestinationHDMI) ? 0 : -1; },
+                  [](const char *path) { return StartMusic(path,VCHIQSoundDestinationHeadphones) ? 0 : -1; },
+                  StopMusic};
+        videoApi.base.struct_bytes=musicApi.base.struct_bytes=sizeof(XdosMediaV2Api);
+        const char *const browserPath="SD:/XDOS/INBOX/V7BROWSE.XAPP";
+        static XdosBrowserV2Api browserApi;
+        browserApi={api,XDOS_BROWSER_V2_CAPABILITY,
+            [](bool claim) {
+                if (claim && browserV2Claimed) return false;
+                browserV2Claimed=claim;
+                return true;
+            },
+            [](void *ctx,const char *url,XdosBrowserFetch fetch) {
+                auto *k=static_cast<CKernel *>(ctx);
+                if (browserV2Busy || !fetch) return false;
+                if (!k->networkInit_ || !k->net_ || !k->net_->IsRunning()) {
+                    k->desktop_.BrowserError("NO NETWORK: Wait for Ethernet or Wi-Fi.");
+                    return false;
+                }
+                char pending[192];
+                unsigned id;
+                if (!k->desktop_.RequestHttp(url) ||
+                    !k->desktop_.TakeBrowserRequest(pending,sizeof pending,id)) return false;
+                browserV2Busy=true;
+                if (new BrowserXappJob(fetch,k->net_,&k->desktop_,pending,id,true)) return true;
+                browserV2Busy=false;
+                k->desktop_.BrowserError("Could not start Browser XAPP job.");
+                return false;
+            },
+            [](void *ctx) { static_cast<CKernel *>(ctx)->desktop_.CancelBrowser(); },
+            [] { return browserV2Busy; },
+            [](void *ctx) { return static_cast<CKernel *>(ctx)->desktop_.BrowserRevision(); },
+            [](void *ctx) { return static_cast<CKernel *>(ctx)->desktop_.BrowserText(); },
+            [](void *ctx) { return static_cast<CKernel *>(ctx)->desktop_.BrowserMessage(); }
+        };
+        browserApi.base.struct_bytes=sizeof browserApi;
         auto v2Host=[&](const char *path) {
             if (!strcasecmp(path,filesPath)) return &filesApi.base;
             if (!strcasecmp(path,terminalPath)) return &terminalApi.base;
+            if (!strcasecmp(path,playerPathV2)) return &videoApi.base;
+            if (!strcasecmp(path,musicPathV2)) return &musicApi.base;
+            if (!strcasecmp(path,browserPath)) return &browserApi.base;
             return &v2api.base;
         };
 
         {   // XDOS_CORE_JOBS: V2 app runtime (core 0)
+#if XDOS_USE_LVGL
+            if (fullscreenV2Slot>=0 && ui_.AtDesktop()) {
+                xdos_v2_exit(fullscreenV2Slot);
+                fullscreenV2Slot=-1;
+            }
+#endif
             XappV2Runtime::Service();
             if (debugSerialReady_) {
                 char name[40];
@@ -953,7 +1011,7 @@ void CKernel::Run()
         if ((uartOpen ? shortcut==Shortcut::Calculator : desktop_.TakeCalculatorRequest()) &&
             ui_.AtDesktop() && (!uartOpen || canOpen)) {
             const int slot=storageMounted_ ?
-                XappV2Runtime::Open("SD:/XDOS/INBOX/FACALC.XAPP",&v2api.base) : -1;
+                XappV2Runtime::Open("SD:/XDOS/INBOX/V7CALC.XAPP",&v2api.base) : -1;
             v2ShortcutOpened=slot>=0;
             desktop_.ReportAppResult(slot>=0 ? "Calculator started" : "Calculator could not start");
         }
@@ -962,7 +1020,7 @@ void CKernel::Run()
         if ((uartOpen ? shortcut==Shortcut::Notepad : desktop_.TakeNotepadRequest()) &&
             ui_.AtDesktop() && (!uartOpen || canOpen)) {
             const int slot = storageMounted_ ?
-                XappV2Runtime::Open("SD:/XDOS/INBOX/FANOTE.XAPP", &v2api.base) : -1;
+                XappV2Runtime::Open("SD:/XDOS/INBOX/V7NOTE.XAPP", &v2api.base) : -1;
             v2ShortcutOpened=slot>=0;
             desktop_.ReportAppResult(slot >= 0 ? "Notepad started" : "Notepad could not start");
         }
@@ -982,7 +1040,7 @@ void CKernel::Run()
         }
         if (workspace==Desktop::PaintApp && canOpen) {
             const int slot=storageMounted_ ?
-                XappV2Runtime::Open("SD:/XDOS/INBOX/FAPAINT.XAPP",&v2api.base) : -1;
+                XappV2Runtime::Open("SD:/XDOS/INBOX/V7PAINT.XAPP",&v2api.base) : -1;
             v2ShortcutOpened=slot>=0;
             desktop_.ReportAppResult(slot>=0 ? "Paint started" : "Paint could not start");
             workspace=Desktop::NoWorkspace;
@@ -991,6 +1049,21 @@ void CKernel::Run()
             const int slot=storageMounted_ ? XappV2Runtime::Open(terminalPath,&terminalApi.base) : -1;
             v2ShortcutOpened=slot>=0;
             desktop_.ReportAppResult(slot>=0 ? "Terminal started" : "Terminal could not start");
+            workspace=Desktop::NoWorkspace;
+        }
+        if ((workspace==Desktop::PlayerApp || workspace==Desktop::MusicApp) && canOpen) {
+            const char *path=workspace==Desktop::PlayerApp ? playerPathV2 : musicPathV2;
+            if (shortcut!=Shortcut::Play) {
+                const int slot=storageMounted_ ? XappV2Runtime::Open(path,v2Host(path)) : -1;
+                v2ShortcutOpened=slot>=0;
+                desktop_.ReportAppResult(slot>=0 ? "Player started" : "Player could not start");
+            }
+            workspace=Desktop::NoWorkspace;
+        }
+        if (workspace==Desktop::BrowserApp && canOpen) {
+            const int slot=storageMounted_ ? XappV2Runtime::Open(browserPath,&browserApi.base) : -1;
+            v2ShortcutOpened=slot>=0;
+            desktop_.ReportAppResult(slot>=0 ? "Browser started" : "Browser could not start");
             workspace=Desktop::NoWorkspace;
         }
         if (workspace==Desktop::FilesApp && canOpen) {
@@ -1068,11 +1141,12 @@ void CKernel::Run()
             const bool calculator=!strcasecmp(app->path,"SD:/XDOS/APPS/CALC.XAPP");
             const bool paint=!strcasecmp(app->path,"SD:/XDOS/APPS/PAINT.XAPP");
             const bool terminal=!strcasecmp(app->path,"SD:/XDOS/APPS/TERMINAL.XAPP");
-            if (files || notepad || calculator || paint || terminal || app->kind==XdosAppKind::CoreApp) {
+            const bool browser=!strcasecmp(app->path,"SD:/XDOS/APPS/BROWSER.XAPP");
+            if (files || notepad || calculator || paint || terminal || browser || app->kind==XdosAppKind::CoreApp) {
                 // XDOS MC4: V2 app -> lowest free slot; it borrows a free core.
-                const char *path=files ? filesPath : notepad ? "SD:/XDOS/INBOX/FANOTE.XAPP"
-                    : calculator ? "SD:/XDOS/INBOX/FACALC.XAPP"
-                    : paint ? "SD:/XDOS/INBOX/FAPAINT.XAPP" : terminal ? terminalPath : app->path;
+                const char *path=files ? filesPath : notepad ? "SD:/XDOS/INBOX/V7NOTE.XAPP"
+                    : calculator ? "SD:/XDOS/INBOX/V7CALC.XAPP"
+                    : paint ? "SD:/XDOS/INBOX/V7PAINT.XAPP" : terminal ? terminalPath : browser ? browserPath : app->path;
                 const int slot = !uartOpen && canOpen && storageMounted_ ?
                     XappV2Runtime::Open(path, v2Host(path)) : -100;
                 CString line;
@@ -1094,15 +1168,18 @@ void CKernel::Run()
             }
         }
         const bool openBuiltinWidgets = desktop_.TakeLVGLRequest();
-        if ((uartOpen ? shortcut==Shortcut::Widgets : openWidgets || openBuiltinWidgets) &&
-            ui_.AtDesktop() && (!uartOpen || canOpen)) {
-            desktop_.ReportAppResult(storageMounted_ ?
-                XdosRunLVGLShortcut(&sketch.base) : "XAPP: FAT32 NOT READY");
-        }
-        if ((uartOpen ? shortcut==Shortcut::Benchmark : desktop_.TakeOfficialBenchmarkLaunchRequest()) &&
-            ui_.AtDesktop() && (!uartOpen || canOpen)) {
-            desktop_.ReportAppResult(storageMounted_ ?
-                XdosRunBenchmarkShortcut(&sketch.base) : "XAPP: FAT32 NOT READY");
+        const bool wantsWidgets=uartOpen ? shortcut==Shortcut::Widgets : openWidgets || openBuiltinWidgets;
+        const bool wantsBenchmark=uartOpen ? shortcut==Shortcut::Benchmark : desktop_.TakeOfficialBenchmarkLaunchRequest();
+        if ((wantsWidgets || wantsBenchmark) && canOpen && fullscreenV2Slot<0) {
+            const char *path=wantsBenchmark ? "SD:/XDOS/INBOX/V7BENCH.XAPP" : "SD:/XDOS/INBOX/V7WIDGET.XAPP";
+            fullscreenV2Slot=storageMounted_ ? XappV2Runtime::Open(path,&sketch.base,wantsBenchmark) : -1;
+            if (fullscreenV2Slot>=0) {
+                xdos_v2_register_close(fullscreenV2Slot,[](void *ctx) {
+                    static_cast<CKernel *>(ctx)->ui_.CloseCurrentApp();
+                },this);
+                v2ShortcutOpened=true;
+            }
+            desktop_.ReportAppResult(v2ShortcutOpened ? "LVGL V2 started" : "LVGL V2 could not start");
         }
 #else
         if (!uartOpen && openWidgets) {
@@ -1113,8 +1190,7 @@ void CKernel::Run()
 #if XDOS_USE_LVGL
 
         if (shortcut==Shortcut::Play) {
-            const bool accepted=canOpen && !ui_.AtDesktop() && QueueVideo(uart.PlayPath());
-            if (!accepted && canOpen && !ui_.AtDesktop()) ui_.CloseCurrentApp();
+            const bool accepted=canOpen && storageMounted_ && QueueVideo(uart.PlayPath());
             serial_.Write(accepted ? "@XDOS PLAYING\r\n" : "@XDOS ERROR\r\n",
                           accepted ? 15 : 13);
         }

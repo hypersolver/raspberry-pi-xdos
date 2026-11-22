@@ -226,7 +226,7 @@ extern "C" int xdos_v2_slot_of(const void *address)
     const uintptr_t a = reinterpret_cast<uintptr_t>(address);
     for (unsigned i = 0; i < XappLoaderV2::Slots; ++i) {
         const uintptr_t base = XappLoaderV2::SlotBase(i);
-        if (a >= base && a < base + XDOS_XAPP_V2_SLOT_BYTES) return (int)i;
+        if (a >= base && a < base + XappLoaderV2::SlotBytes(i)) return (int)i;
     }
     return -1;
 }
@@ -238,7 +238,7 @@ extern "C" void xdos_v2_register_close(int slot, void (*on_close)(void *), void 
     instances[slot].ctx = ctx;
 }
 
-/* A movable window on the top layer with a title bar and a close button that
+/* A movable window on its owning screen with a title bar and close button that
  * calls the app's registered on_close. Returns the content area; the runtime
  * deletes the window when the slot is released. Core 0 only. */
 extern "C" lv_obj_t *xdos_v2_window(int slot, const char *title, int width, int height)
@@ -253,7 +253,7 @@ extern "C" lv_obj_t *xdos_v2_window(int slot, const char *title, int width, int 
     if (height < 120) height = 120;
     if (width > sw) width = sw;
     if (height > sh - kTitleH) height = sh - kTitleH;
-    lv_obj_t *win = lv_obj_create(lv_layer_top());
+    lv_obj_t *win = lv_obj_create(lv_screen_active());
     lv_obj_remove_style_all(win);
     lv_obj_set_size(win, width, height + kTitleH);
     const int32_t x = sw - width - 24 - slot * 36, y = 60 + slot * 44;
@@ -311,10 +311,10 @@ extern "C" void xdos_v2_exit(int slot)
     instances[slot].exitPending = true;
 }
 
-int XappV2Runtime::Open(const char *path, const XdosHostApiV1 *api)
+int XappV2Runtime::Open(const char *path, const XdosHostApiV1 *api, bool large)
 {
     InitializeMemory();
-    const int slot = XappLoaderV2::AcquireSlot();
+    const int slot = XappLoaderV2::AcquireSlot(large);
     if (slot < 0) return XappLoaderV2::NO_SLOT;
     instances[slot] = Instance{};
     endpoints[slot] = ipc.Activate(slot);
@@ -387,18 +387,14 @@ void XappV2Runtime::Status(char *buffer, unsigned size)
 
 static int WindowAt(int x, int y)
 {
-    int hit = -1;
-    lv_obj_t *top = nullptr;
-    for (unsigned i = 0; i < XappLoaderV2::Slots; ++i) {
-        lv_obj_t *w = instances[i].window;
-        if (!Held((int)i) || !Valid(w) || lv_obj_has_flag(w, LV_OBJ_FLAG_HIDDEN)) continue;
-        lv_area_t a;
-        lv_obj_get_coords(w, &a);
-        if (x < a.x1 || x > a.x2 || y < a.y1 || y > a.y2) continue;
-        /* topmost = highest index among top-layer children */
-        if (!top || lv_obj_get_index(w) > lv_obj_get_index(top)) { top = w; hit = (int)i; }
-    }
-    return hit;
+    lv_point_t point{x,y};
+    if (lv_indev_search_obj(lv_layer_top(),&point)) return -1;
+    auto *screen=lv_screen_active();
+    auto *hit=lv_indev_search_obj(screen,&point);
+    while (hit && lv_obj_get_parent(hit)!=screen) hit=lv_obj_get_parent(hit);
+    for (unsigned i=0;hit && i<XappLoaderV2::Slots;++i)
+        if (Held(i) && instances[i].window==hit) return static_cast<int>(i);
+    return -1;
 }
 
 bool XappV2Runtime::BlocksDesktopHover(int x, int y)
@@ -426,6 +422,9 @@ bool XappV2Runtime::Pointer(int action, int x, int y)
 bool XappV2Runtime::DeliverKey(unsigned key)
 {
     if (!Held(focused)) { focused = -1; return false; }
+    auto *window=instances[focused].window;
+    if (!Valid(window) || lv_obj_get_screen(window)!=lv_screen_active()
+        || lv_obj_has_flag(window,LV_OBJ_FLAG_HIDDEN)) return false;
     if (key == 264) return false;            /* XdosKeyWindows: desktop menu */
     if (key == 265) return Close(focused);   /* XdosKeyAltF4: close the focused V2 app */
     Instance &in = instances[focused];
