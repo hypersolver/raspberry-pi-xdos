@@ -196,6 +196,7 @@ struct LendState {
     volatile int done;
     volatile int32_t result;
     volatile int stop;                     // cooperative stop request
+    const void *volatile owner;            // caller of xdos_core_lend*(): app code address
 };
 LendState lend[CORES];
 
@@ -300,7 +301,21 @@ int xdos_core_sleep_us(uint32_t us)
     return r;
 }
 
+static int LendFrom(unsigned core, int32_t (*job)(void *), void *arg, const void *owner);
+
+// Return address of the app that borrowed `core` (map it to a slot with
+// xdos_v2_slot_of), or 0 when the core is not lent.
+const void *xdos_core_lend_owner(unsigned core)
+{
+    return core < CORES && lend[core].lent ? lend[core].owner : nullptr;
+}
+
 int xdos_core_lend(unsigned core, int32_t (*job)(void *), void *arg)
+{
+    return LendFrom(core, job, arg, __builtin_return_address(0));
+}
+
+static int LendFrom(unsigned core, int32_t (*job)(void *), void *arg, const void *owner)
 {
     if (ThisCore() != 0 || !job || core < kFirstLendable || core >= CORES ||
         core > (unsigned)LV_DRAW_SW_DRAW_UNIT_CNT || !cores || lend[core].lent) return 0;
@@ -314,6 +329,7 @@ int xdos_core_lend(unsigned core, int32_t (*job)(void *), void *arg)
     l.stop = 0;
     l.result = 0;
     l.arg = arg;
+    l.owner = owner;
     DataMemBarrier();
     l.lent = 1;               // dispatcher stops handing tasks to this unit
     DataMemBarrier();
@@ -324,8 +340,9 @@ int xdos_core_lend(unsigned core, int32_t (*job)(void *), void *arg)
 
 int xdos_core_lend_any(int32_t (*job)(void *), void *arg)
 {
+    const void *owner = __builtin_return_address(0);
     for (unsigned core = CORES - 1; core >= kFirstLendable; --core)
-        if (xdos_core_lend(core, job, arg)) return (int)core;
+        if (LendFrom(core, job, arg, owner)) return (int)core;
     return -1;
 }
 

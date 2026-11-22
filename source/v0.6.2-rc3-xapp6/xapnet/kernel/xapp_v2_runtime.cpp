@@ -23,6 +23,7 @@ struct Instance {
     void (*onKey)(void *, unsigned);
     void *keyCtx;
     XdosScreen screen;                      /* R16-B: Full apps are exclusive */
+    char name[24];                          /* taskbar / status name */
     unsigned sliceStart;                    /* core-0 shared mode budget */
     unsigned slicesOver2ms;
     unsigned longStreak;                    /* consecutive slices over 10 ms */
@@ -349,6 +350,41 @@ extern "C" unsigned xdos_v2_shared_stats(int slot)
     return Held(slot) ? instances[slot].slicesOver2ms : 0;
 }
 
+void XappV2Runtime::SetName(int slot, const char *name)
+{
+    if (!Held(slot) || !name) return;
+    strncpy(instances[slot].name, name, sizeof instances[slot].name - 1);
+    instances[slot].name[sizeof instances[slot].name - 1] = 0;
+}
+
+static void AppendName(char *line, const char *name)
+{
+    const unsigned used = strlen(line);
+    if (used + 3 >= 64) return;
+    if (used) strcat(line, ", ");
+    strncat(line, name, 63 - strlen(line));
+}
+
+void XappV2Runtime::CoreApps(char (*cpu)[64])
+{
+    for (unsigned c = 0; c < 4; ++c) cpu[c][0] = 0;
+    bool onCore[XappLoaderV2::Slots] = {};
+    for (unsigned core = 1; core < 4; ++core) {
+        const void *owner = xdos_core_lend_owner(core);
+        if (!owner) continue;
+        const int slot = xdos_v2_slot_of(owner);
+        if (slot >= 0 && Held(slot)) {
+            AppendName(cpu[core], instances[slot].name);
+            onCore[slot] = true;
+        } else {
+            AppendName(cpu[core], "app");
+        }
+    }
+    for (unsigned i = 0; i < XappLoaderV2::Slots; ++i)
+        if (XappLoaderV2::IsHeld(i) && !onCore[i] && !instances[i].closing)
+            AppendName(cpu[0], instances[i].name);
+}
+
 bool XappV2Runtime::FullActive()
 {
     for (unsigned i = 0; i < XappLoaderV2::Slots; ++i)
@@ -382,6 +418,16 @@ int XappV2Runtime::Open(const char *path, const XdosHostApiV1 *api, bool large, 
     if (slot < 0) return XappLoaderV2::NO_SLOT;
     instances[slot] = Instance{};
     instances[slot].screen = screen;
+    {   /* default name: file name without directory and extension */
+        const char *leaf = path;
+        for (const char *p = path; *p; ++p) if (*p == '/' || *p == ':') leaf = p + 1;
+        unsigned n = 0;
+        while (leaf[n] && leaf[n] != '.' && n + 1 < sizeof instances[slot].name) {
+            instances[slot].name[n] = leaf[n];
+            ++n;
+        }
+        instances[slot].name[n] = 0;
+    }
     endpoints[slot] = ipc.Activate(slot);
     const XappLoaderV2::Result r = XappLoaderV2::ExecuteFile(path, api, (unsigned)slot, true);
     if (r != XappLoaderV2::OK) {

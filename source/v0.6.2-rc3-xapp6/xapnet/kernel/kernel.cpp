@@ -996,6 +996,16 @@ void CKernel::Run()
             // stays with LVGL; otherwise all three may be lent.
             const bool fullScreen = !ui_.AtDesktop() || XappV2Runtime::FullActive();
             xdos_core_set_lend_limit(fullScreen ? 2U : 3U);
+            {   // Taskbar: which app runs on which CPU (refreshed every 250 ms).
+                static unsigned lastCoreAppsUs;
+                const unsigned now = CTimer::GetClockTicks();
+                if (now - lastCoreAppsUs >= 250000U) {
+                    lastCoreAppsUs = now;
+                    char apps[4][64];
+                    XappV2Runtime::CoreApps(apps);
+                    desktop_.SetCoreApps(apps);
+                }
+            }
             const int slowed = XappV2Runtime::TakeThrottled();
             if (slowed >= 0) {
                 CString note;
@@ -1188,6 +1198,7 @@ void CKernel::Run()
                 const int slot = !uartOpen && canOpen && storageMounted_ ?
                     XappV2Runtime::Open(path, v2Host(path), false, screen) : -100;
                 CString line;
+                if (slot >= 0) XappV2Runtime::SetName(slot, app->name);
                 if (slot >= 0) line.Format("XAPP: %s started (slot %d)", app->name, slot);
                 else if (slot == -100) line = "XAPP: desktop busy";
                 else if (slot == XappV2Runtime::SCREEN_BUSY)

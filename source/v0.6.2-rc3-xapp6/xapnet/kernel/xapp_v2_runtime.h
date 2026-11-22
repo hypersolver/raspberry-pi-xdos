@@ -16,6 +16,12 @@ constexpr int SCREEN_BUSY = -11;
 bool FullActive();
 /* Slot whose app was just throttled for overrunning its core-0 slices, or -1 (once). */
 int TakeThrottled();
+/* Display name of the app in `slot` (default: its file name without extension). */
+void SetName(int slot, const char *name);
+/* For the taskbar: names of the apps on each CPU. cpu[0] lists the apps without a
+ * borrowed core (their UI and work run on CPU0); cpu[1..3] name the app that
+ * borrowed that core, or "" when the core draws for LVGL. */
+void CoreApps(char (*cpu)[64]);
 /* Ask the app in `slot` to close (its registered on_close). False when the
  * slot is free or the app registered no close handler. */
 bool Close(int slot);

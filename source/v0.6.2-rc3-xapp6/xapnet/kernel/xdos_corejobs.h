@@ -39,6 +39,7 @@ int xdos_core_reclaim(unsigned core);                        /* core 0; 1 when r
  * and 2 while one does (a draw core stays with LVGL); xdos_core_lend_any() returns
  * -1 above that limit and the app then runs its work on core 0 (shared mode). */
 unsigned xdos_core_lent_count(void);
+const void *xdos_core_lend_owner(unsigned core);   /* app code address of the borrower, or 0 */
 unsigned xdos_core_lend_limit(void);
 
 /* Timing on any core. xdos_core_time_us(): system timer in microseconds (wraps).
