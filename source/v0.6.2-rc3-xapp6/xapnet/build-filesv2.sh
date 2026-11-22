@@ -51,8 +51,10 @@ for app in widgets benchmark; do
     arm-none-eabi-ld -r -o "$work/$app.o" "$work/$app-sketch.o" "$work/$app-entry.o" "${app_objects[@]}"
 done
 arm-none-eabi-nm -u "$work/files.o" "$work/notepad.o" "$work/calculator.o" "$work/paint.o" "$work/terminal.o" "$work/video.o" "$work/music.o" "$work/browser.o" "$work/widgets.o" "$work/benchmark.o" | awk '$1=="U" {print "LDFLAGS += --undefined=" $2}' | sort -u >> "$sample/xapp-imports.mk"
+cp "$src"/circle-net/*.cpp "$circle/lib/net/"
+make -C "$circle/lib/net" -j4
 make -C "$sample" -j4
-cp "$sample/kernel8-32.img" "$out/FVMEDIA.IMG"
+cp "$sample/kernel8-32.img" "$out/FVMNET.IMG"
 cp "$sample/kernel8-32.elf" "$out/kernel8-32.elf"
 PYTHONPATH="$tool" "${PACK_PYTHON:-python3}" - "$work" "$out" <<'PY'
 from pathlib import Path
@@ -60,9 +62,9 @@ import sys
 import xapp_v2_pack as packer
 work,out=map(Path,sys.argv[1:])
 symbols=packer.kernel_symbols(out/'kernel8-32.elf')
-fp=packer.kernel_fingerprint(symbols,out/'FVMEDIA.IMG')
-for source,target in [('files','V7FILES.XAPP'),('notepad','V7NOTE.XAPP'),('calculator','V7CALC.XAPP'),('paint','V7PAINT.XAPP'),('terminal','V7TERM.XAPP'),('video','V7VIDEO.XAPP'),('music','V7MUSIC.XAPP'),('browser','V7BROWSE.XAPP'),('widgets','V7WIDGET.XAPP'),('benchmark','V7BENCH.XAPP')]:
+fp=packer.kernel_fingerprint(symbols,out/'FVMNET.IMG')
+for source,target in [('files','N8FILES.XAPP'),('notepad','N8NOTE.XAPP'),('calculator','N8CALC.XAPP'),('paint','N8PAINT.XAPP'),('terminal','N8TERM.XAPP'),('video','N8VIDEO.XAPP'),('music','N8MUSIC.XAPP'),('browser','N8BROWSE.XAPP'),('widgets','N8WIDGET.XAPP'),('benchmark','N8BENCH.XAPP')]:
     packer.SLOT_BYTES=(768 if source=='benchmark' else 320)*1024
     print(target, packer.pack([work/(source+'.o')],symbols,fp,out/target))
 PY
-(cd "$out" && sha256sum FVMEDIA.IMG V7FILES.XAPP V7NOTE.XAPP V7CALC.XAPP V7PAINT.XAPP V7TERM.XAPP V7VIDEO.XAPP V7MUSIC.XAPP V7BROWSE.XAPP V7WIDGET.XAPP V7BENCH.XAPP > SHA256SUMS.txt)
+(cd "$out" && sha256sum FVMNET.IMG N8FILES.XAPP N8NOTE.XAPP N8CALC.XAPP N8PAINT.XAPP N8TERM.XAPP N8VIDEO.XAPP N8MUSIC.XAPP N8BROWSE.XAPP N8WIDGET.XAPP N8BENCH.XAPP > SHA256SUMS.txt)
