@@ -44,6 +44,7 @@ extern "C"
 	volatile unsigned xdos_net_us;		// time spent in Process()
 	volatile unsigned xdos_net_n;		// number of Process() passes
 	volatile unsigned xdos_net_sleep_ms = 1;	// current polling interval
+	extern volatile unsigned xdos_net_fetch_active;
 	extern volatile unsigned xdos_net_frames;	// CNetDeviceLayer: frames sent + received
 }
 
@@ -82,7 +83,7 @@ void CNetTask::Run (void)
 			nLastFrames = xdos_net_frames;
 			nLastActive = nEnd;
 		}
-		xdos_net_sleep_ms = nEnd - nLastActive < XDOS_NET_FAST_WINDOW_US ? 1U : XDOS_NET_IDLE_SLEEP_MS;
+		xdos_net_sleep_ms = (xdos_net_fetch_active || nEnd - nLastActive < XDOS_NET_FAST_WINDOW_US) ? 1U : XDOS_NET_IDLE_SLEEP_MS;
 #endif
 
 		// This polling task must become non-runnable between passes so

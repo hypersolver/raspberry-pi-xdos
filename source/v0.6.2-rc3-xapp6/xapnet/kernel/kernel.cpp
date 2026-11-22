@@ -32,6 +32,7 @@ static XdosUartService &TerminalUart()
 #include <circle/bcmpropertytags.h>
 #include <circle/memory.h>
 #include <vc4/vchiq/vchiqdevice.h>
+extern "C" { volatile unsigned xdos_net_fetch_active; }
 extern "C" volatile unsigned xdos_net_us,xdos_net_n,xdos_net_frames,xdos_net_sleep_ms;
 extern "C" volatile int xdos_cpu_awake;
 extern "C" volatile unsigned xdos_lvgl_due_us;
@@ -728,7 +729,7 @@ void CKernel::UpdateNetworkStatus()
 
 void CKernel::Run()
 {
-    Debug("[XDOS] V0.6.2-RC3 XAPP6-PERF7-VC4-AnalyticsRegionGuard-FVMNET / Pi 3 ARM32\r\n");
+    Debug("[XDOS] V0.6.2-RC3 XAPP6-PERF7-VC4-AnalyticsRegionGuard-FVMNET2 / Pi 3 ARM32\r\n");
 #if XDOS_USE_LVGL
     ui_.Initialize(&desktop_,debugSerialReady_ ? &serial_ : 0);
     static CVCHIQDevice gpu(CMemorySystem::Get(),&interrupt_);
@@ -893,7 +894,7 @@ void CKernel::Run()
                   [](const char *path) -> int { return XdosDeleteFile(path); },
                   XdosFilesQueueLaunch,XdosFilesClaim,XdosFilesSetPanes};
         filesApi.base.struct_bytes=sizeof filesApi;
-        const char *const filesPath="SD:/XDOS/INBOX/N8FILES.XAPP";
+        const char *const filesPath="SD:/XDOS/INBOX/N9FILES.XAPP";
         static XdosTerminalV2Api terminalApi;
         terminalApi={api,XDOS_TERMINAL_V2_CAPABILITY,
             [](void *opaque,const char *text) -> int32_t {
@@ -922,9 +923,9 @@ void CKernel::Run()
             [](void *ctx) { return static_cast<CKernel *>(ctx)->desktop_.TerminalText(); }
         };
         terminalApi.base.struct_bytes=sizeof terminalApi;
-        const char *const terminalPath="SD:/XDOS/INBOX/N8TERM.XAPP";
-        const char *const playerPathV2="SD:/XDOS/INBOX/N8VIDEO.XAPP";
-        const char *const musicPathV2="SD:/XDOS/INBOX/N8MUSIC.XAPP";
+        const char *const terminalPath="SD:/XDOS/INBOX/N9TERM.XAPP";
+        const char *const playerPathV2="SD:/XDOS/INBOX/N9VIDEO.XAPP";
+        const char *const musicPathV2="SD:/XDOS/INBOX/N9MUSIC.XAPP";
         static XdosMediaV2Api videoApi,musicApi;
         videoApi={api,XDOS_MEDIA_V2_CAPABILITY,xdos_directory_visit,
                   [](const char *path) { return QueueVideo(path) ? 0 : -1; },nullptr,nullptr};
@@ -933,7 +934,7 @@ void CKernel::Run()
                   [](const char *path) { return StartMusic(path,VCHIQSoundDestinationHeadphones) ? 0 : -1; },
                   StopMusic};
         videoApi.base.struct_bytes=musicApi.base.struct_bytes=sizeof(XdosMediaV2Api);
-        const char *const browserPath="SD:/XDOS/INBOX/N8BROWSE.XAPP";
+        const char *const browserPath="SD:/XDOS/INBOX/N9BROWSE.XAPP";
         static XdosBrowserV2Api browserApi;
         browserApi={api,XDOS_BROWSER_V2_CAPABILITY,
             [](bool claim) {
@@ -1012,7 +1013,7 @@ void CKernel::Run()
         if ((uartOpen ? shortcut==Shortcut::Calculator : desktop_.TakeCalculatorRequest()) &&
             ui_.AtDesktop() && (!uartOpen || canOpen)) {
             const int slot=storageMounted_ ?
-                XappV2Runtime::Open("SD:/XDOS/INBOX/N8CALC.XAPP",&v2api.base) : -1;
+                XappV2Runtime::Open("SD:/XDOS/INBOX/N9CALC.XAPP",&v2api.base) : -1;
             v2ShortcutOpened=slot>=0;
             desktop_.ReportAppResult(slot>=0 ? "Calculator started" : "Calculator could not start");
         }
@@ -1021,7 +1022,7 @@ void CKernel::Run()
         if ((uartOpen ? shortcut==Shortcut::Notepad : desktop_.TakeNotepadRequest()) &&
             ui_.AtDesktop() && (!uartOpen || canOpen)) {
             const int slot = storageMounted_ ?
-                XappV2Runtime::Open("SD:/XDOS/INBOX/N8NOTE.XAPP", &v2api.base) : -1;
+                XappV2Runtime::Open("SD:/XDOS/INBOX/N9NOTE.XAPP", &v2api.base) : -1;
             v2ShortcutOpened=slot>=0;
             desktop_.ReportAppResult(slot >= 0 ? "Notepad started" : "Notepad could not start");
         }
@@ -1041,7 +1042,7 @@ void CKernel::Run()
         }
         if (workspace==Desktop::PaintApp && canOpen) {
             const int slot=storageMounted_ ?
-                XappV2Runtime::Open("SD:/XDOS/INBOX/N8PAINT.XAPP",&v2api.base) : -1;
+                XappV2Runtime::Open("SD:/XDOS/INBOX/N9PAINT.XAPP",&v2api.base) : -1;
             v2ShortcutOpened=slot>=0;
             desktop_.ReportAppResult(slot>=0 ? "Paint started" : "Paint could not start");
             workspace=Desktop::NoWorkspace;
@@ -1145,9 +1146,9 @@ void CKernel::Run()
             const bool browser=!strcasecmp(app->path,"SD:/XDOS/APPS/BROWSER.XAPP");
             if (files || notepad || calculator || paint || terminal || browser || app->kind==XdosAppKind::CoreApp) {
                 // XDOS MC4: V2 app -> lowest free slot; it borrows a free core.
-                const char *path=files ? filesPath : notepad ? "SD:/XDOS/INBOX/N8NOTE.XAPP"
-                    : calculator ? "SD:/XDOS/INBOX/N8CALC.XAPP"
-                    : paint ? "SD:/XDOS/INBOX/N8PAINT.XAPP" : terminal ? terminalPath : browser ? browserPath : app->path;
+                const char *path=files ? filesPath : notepad ? "SD:/XDOS/INBOX/N9NOTE.XAPP"
+                    : calculator ? "SD:/XDOS/INBOX/N9CALC.XAPP"
+                    : paint ? "SD:/XDOS/INBOX/N9PAINT.XAPP" : terminal ? terminalPath : browser ? browserPath : app->path;
                 const int slot = !uartOpen && canOpen && storageMounted_ ?
                     XappV2Runtime::Open(path, v2Host(path)) : -100;
                 CString line;
@@ -1172,7 +1173,7 @@ void CKernel::Run()
         const bool wantsWidgets=uartOpen ? shortcut==Shortcut::Widgets : openWidgets || openBuiltinWidgets;
         const bool wantsBenchmark=uartOpen ? shortcut==Shortcut::Benchmark : desktop_.TakeOfficialBenchmarkLaunchRequest();
         if ((wantsWidgets || wantsBenchmark) && canOpen && fullscreenV2Slot<0) {
-            const char *path=wantsBenchmark ? "SD:/XDOS/INBOX/N8BENCH.XAPP" : "SD:/XDOS/INBOX/N8WIDGET.XAPP";
+            const char *path=wantsBenchmark ? "SD:/XDOS/INBOX/N9BENCH.XAPP" : "SD:/XDOS/INBOX/N9WIDGET.XAPP";
             fullscreenV2Slot=storageMounted_ ? XappV2Runtime::Open(path,&sketch.base,wantsBenchmark) : -1;
             if (fullscreenV2Slot>=0) {
                 xdos_v2_register_close(fullscreenV2Slot,[](void *ctx) {

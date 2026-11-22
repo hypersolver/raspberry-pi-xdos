@@ -19,6 +19,8 @@ struct XdosCommandReply {
 void XdosPrintBenchmarkReport(XdosCommandReply reply);
 void ReportMusicAudio(XdosCommandReply reply);
 
+extern "C" volatile unsigned xdos_net_fetch_active;
+
 class XdosUartService {
 public:
     // Returns false only for unregistered legacy desktop commands.
@@ -177,8 +179,10 @@ private:
     void RunFetch(const CIPAddress &host,unsigned port)
     {
         const char *name = path_+sizeof("SD:/XDOS/INBOX/")-1;
+        xdos_net_fetch_active=1;
         const bool received = XdosNetFetch::Download(net_,host,port,name,remaining_,
             [this](const u8 *bytes,unsigned count) { return Append(bytes,count); });
+        xdos_net_fetch_active=0;
         const bool saved = received && Commit();
         if (!saved) Abort();
         fetchActive_ = false;

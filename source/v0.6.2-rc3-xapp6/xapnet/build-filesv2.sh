@@ -54,7 +54,7 @@ arm-none-eabi-nm -u "$work/files.o" "$work/notepad.o" "$work/calculator.o" "$wor
 cp "$src"/circle-net/*.cpp "$circle/lib/net/"
 make -C "$circle/lib/net" -j4
 make -C "$sample" -j4
-cp "$sample/kernel8-32.img" "$out/FVMNET.IMG"
+cp "$sample/kernel8-32.img" "$out/FVMNET2.IMG"
 cp "$sample/kernel8-32.elf" "$out/kernel8-32.elf"
 PYTHONPATH="$tool" "${PACK_PYTHON:-python3}" - "$work" "$out" <<'PY'
 from pathlib import Path
@@ -62,9 +62,9 @@ import sys
 import xapp_v2_pack as packer
 work,out=map(Path,sys.argv[1:])
 symbols=packer.kernel_symbols(out/'kernel8-32.elf')
-fp=packer.kernel_fingerprint(symbols,out/'FVMNET.IMG')
-for source,target in [('files','N8FILES.XAPP'),('notepad','N8NOTE.XAPP'),('calculator','N8CALC.XAPP'),('paint','N8PAINT.XAPP'),('terminal','N8TERM.XAPP'),('video','N8VIDEO.XAPP'),('music','N8MUSIC.XAPP'),('browser','N8BROWSE.XAPP'),('widgets','N8WIDGET.XAPP'),('benchmark','N8BENCH.XAPP')]:
+fp=packer.kernel_fingerprint(symbols,out/'FVMNET2.IMG')
+for source,target in [('files','N9FILES.XAPP'),('notepad','N9NOTE.XAPP'),('calculator','N9CALC.XAPP'),('paint','N9PAINT.XAPP'),('terminal','N9TERM.XAPP'),('video','N9VIDEO.XAPP'),('music','N9MUSIC.XAPP'),('browser','N9BROWSE.XAPP'),('widgets','N9WIDGET.XAPP'),('benchmark','N9BENCH.XAPP')]:
     packer.SLOT_BYTES=(768 if source=='benchmark' else 320)*1024
     print(target, packer.pack([work/(source+'.o')],symbols,fp,out/target))
 PY
-(cd "$out" && sha256sum FVMNET.IMG N8FILES.XAPP N8NOTE.XAPP N8CALC.XAPP N8PAINT.XAPP N8TERM.XAPP N8VIDEO.XAPP N8MUSIC.XAPP N8BROWSE.XAPP N8WIDGET.XAPP N8BENCH.XAPP > SHA256SUMS.txt)
+(cd "$out" && sha256sum FVMNET2.IMG N9FILES.XAPP N9NOTE.XAPP N9CALC.XAPP N9PAINT.XAPP N9TERM.XAPP N9VIDEO.XAPP N9MUSIC.XAPP N9BROWSE.XAPP N9WIDGET.XAPP N9BENCH.XAPP > SHA256SUMS.txt)
