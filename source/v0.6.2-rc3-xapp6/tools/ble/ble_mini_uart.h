@@ -89,7 +89,9 @@ public:
 
 private:
     static constexpr unsigned Alt5 = 2;
-    static constexpr unsigned ScanControl = 0x0f;
+    // Broadcom HCI UART uses active-low CTS and RTS. AUX defaults to
+    // active-high unless both polarity bits are explicitly set.
+    static constexpr unsigned ScanControl = 0xcf;
 
     static unsigned PinFunction(unsigned pin)
     {
