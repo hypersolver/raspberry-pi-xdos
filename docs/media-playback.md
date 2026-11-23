@@ -39,3 +39,7 @@ Image View in FVLANG1 · FVLANG1 相片檢視 · FVLANG1 の画像表示
 720p MP4 playback requested · 已送出 720p 影片播放要求 · 720p 動画の再生要求を送信
 
 [Media release and compatibility](multicore-media.md) · [Installation and wiring](flashing-by-board.md)
+
+![FVR19 playing VC4PLAY.MP4 on Pi 3B+](media/mp4-playback-fvr19.jpg)
+
+Actual playback on FVR19 (320×240 test clip, frame 68) · FVR19 實際播放（320×240 測試片，第 68 幀） · FVR19 の実再生（320×240 のテスト動画、第68フレーム）
