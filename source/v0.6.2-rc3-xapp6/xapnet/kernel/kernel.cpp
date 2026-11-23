@@ -44,6 +44,7 @@ extern "C" { volatile unsigned xdos_net_fetch_active; }
 extern "C" volatile unsigned xdos_net_us,xdos_net_n,xdos_net_frames,xdos_net_sleep_ms;
 extern "C" void xdos_core_set_lend_limit(unsigned limit);   // R16-B lending policy (circle-lvgl/xdos_lv_os.cpp)
 extern "C" volatile int xdos_cpu_awake;
+extern "C" { unsigned xdos_vc_mem_mb; }
 extern "C" volatile unsigned xdos_lvgl_due_us;
 extern "C" volatile unsigned xdos_wfi_microseconds;
 extern "C" volatile unsigned xdos_prof_irq_us, xdos_prof_irq_n, xdos_prof_fiq_us, xdos_prof_fiq_n, xdos_prof_idle_int_us;
@@ -325,6 +326,14 @@ Boot(12,"DESKTOP","Initializing desktop display",CBootSplash::PENDING);
         Debug("[LVGL] initialization failed\r\n");
         return FALSE;
     }
+    CBcmPropertyTags tags;
+    TPropertyTagMemory vc = {};
+    if (tags.GetTag(PROPTAG_GET_VC_MEMORY, &vc, sizeof vc)) {
+        xdos_vc_mem_mb = vc.nSize >> 20;
+    }
+    CString memoryStatus;
+    memoryStatus.Format("[VIDEO] GPU memory %u MB\r\n", xdos_vc_mem_mb);
+    Debug((const char *)memoryStatus);
     boot_.Finish("BOOT READY - opening XD OS desktop");
     scheduler_.MsSleep(150);
 #else
