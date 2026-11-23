@@ -22,11 +22,13 @@ The Arduino SDK, board package, and examples are maintained in [RPiDuino](https:
 
 ## PXLAYOUT preview
 
-These 1920×1080 previews were rendered on a host using the release's drawing code and sample status text.
+FVR19 running on a Raspberry Pi 3B+, captured over HDMI at 1920×1080. The desktop LAN address is masked.
 
 | Boot splash | Desktop |
 | --- | --- |
-| ![Simulated PXLAYOUT boot splash](docs/pxlayout/boot.png) | ![Simulated PXLAYOUT desktop](docs/pxlayout/desktop.png) |
+| ![FVR19 boot screen](docs/fvr19/boot.png) | ![FVR19 desktop](docs/fvr19/desktop.png) |
+
+[LVGL Benchmark results screenshot](docs/fvr19/benchmark.png)
 
 ## Why XDOS
 

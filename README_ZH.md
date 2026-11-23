@@ -22,11 +22,13 @@ Arduino SDK、板卡套件與範例已移至 [RPiDuino](https://github.com/hyper
 
 ## PXLAYOUT 畫面預覽
 
-以下 1920×1080 模擬預覽由發行版的繪圖程式在電腦上產生，狀態文字使用測試資料。
+以下為 Raspberry Pi 3B+ 執行 FVR19 的 1920×1080 HDMI 實機截圖。桌面的區網位址已遮蔽。
 
 | 開機畫面 | 桌面 |
 | --- | --- |
-| ![PXLAYOUT 開機畫面模擬預覽](docs/pxlayout/boot.png) | ![PXLAYOUT 桌面模擬預覽](docs/pxlayout/desktop.png) |
+| ![FVR19 開機畫面](docs/fvr19/boot.png) | ![FVR19 桌面](docs/fvr19/desktop.png) |
+
+[LVGL Benchmark 成績畫面](docs/fvr19/benchmark.png)
 
 ## 開發動機與架構
 
