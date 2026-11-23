@@ -1,5 +1,10 @@
 # XDOS 研發與驗證紀錄
 
+## FVR17–FVR21
+
+近期公開版本的實測、LVGL 效能基線與實驗版本進度，請見[最新架構與研發紀錄](../../docs/architecture.zh-TW.md)。[日本語](../../docs/architecture.ja.md)
+
+
 ## 已公開的實機基準
 
 | 階段 | 結果 |

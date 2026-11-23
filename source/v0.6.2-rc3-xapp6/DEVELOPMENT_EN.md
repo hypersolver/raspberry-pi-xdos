@@ -1,5 +1,10 @@
 # XDOS development and validation
 
+## FVR17–FVR21
+
+See the [current architecture and development record](../../docs/architecture.md) for the published milestones, benchmark baseline and separate experimental work. [日本語](../../docs/architecture.ja.md)
+
+
 PXLAYOUT is the public prerelease. Raspberry Pi 3B+ testing passed at 720p and 1080p, including icon and label clicks for all nine desktop shortcuts. PXBOOT and the 128-row LVGL build were retained as rollback baselines. See the [release guide](PXLAYOUT_EN.md).
 
 ## Experimental media builds

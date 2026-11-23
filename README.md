@@ -1,8 +1,8 @@
 # Raspberry Pi XDOS
 
-[繁體中文](README_ZH.md) · [Latest prerelease](https://github.com/hypersolver/raspberry-pi-xdos/releases/tag/v0.6.2-rc3-xapp6-pxlayout) · [Base XAPP6 Release](https://github.com/hypersolver/raspberry-pi-xdos/releases/tag/v0.6.2-rc3-xapp6)
+[繁體中文](README_ZH.md) · [日本語](README_JA.md) · [FVR21 prerelease](https://github.com/hypersolver/raspberry-pi-xdos/releases/tag/v0.6.2-rc3-xapp6-fvr21) · [Base XAPP6 Release](https://github.com/hypersolver/raspberry-pi-xdos/releases/tag/v0.6.2-rc3-xapp6)
 
-XDOS is an ARM32 bare-metal desktop for Raspberry Pi. Circle provides the hardware support, LVGL draws the desktop, and the system loads external XAPPs from microSD. The earlier PXLAYOUT prerelease, was tested on a Raspberry Pi 3B+ at 1280×720 and 1920×1080.
+XDOS is an ARM32 bare-metal desktop for Raspberry Pi. Circle provides the hardware support, LVGL draws the desktop, and the system loads external XAPPs from microSD. The earlier PXLAYOUT prerelease was tested on a Raspberry Pi 3B+ at 1280×720 and 1920×1080.
 
 ## RPiDuino Arduino SDK
 
@@ -20,7 +20,7 @@ The Arduino SDK, board package, and examples are maintained in [RPiDuino](https:
 2. [Build, deploy and run Arduino sketches as XAPPs (繁體中文)](docs/arduino-xapp.zh-TW.md)
 3. [XAPP desktop shortcut and icon specification](docs/xapp-desktop-spec.md)
 
-## PXLAYOUT preview
+## FVR19 hardware screenshots
 
 FVR19 running on a Raspberry Pi 3B+, captured over HDMI at 1920×1080. The desktop LAN address is masked.
 
@@ -36,6 +36,8 @@ XDOS started as a port of XD OS to Raspberry Pi. It explores how far a small bar
 
 ## System architecture
 
+[Current development record, multicore, boot modes, Arduino, and flashing diagrams](docs/architecture.md)
+
 ~~~mermaid
 flowchart TD
     Boot["Pi boot firmware and config.txt"] --> Kernel["XDOS ARM32 kernel"]
@@ -48,7 +50,7 @@ flowchart TD
     Apps --> UI
 ~~~
 
-The core owns startup, device services, the desktop, the XAPP execution slot and recovery commands. The loader checks the AAPCS32 interface and, for modules with direct kernel imports, the kernel fingerprint.
+The core owns startup, device services, the desktop, the four-slot V2 runtime and recovery commands. V2 modules can bind to compatible host exports at load time. Bound modules still require the matching kernel fingerprint.
 
 ## Development and deployment
 
@@ -69,7 +71,7 @@ Review IMG and ELF changes, build matching XAPPs, and confirm startup, display, 
 | Release | When to use it |
 | --- | --- |
 | [Base RC3 XAPP6](https://github.com/hypersolver/raspberry-pi-xdos/releases/tag/v0.6.2-rc3-xapp6) | Start with the ARM32 baseline, external LVGL demos and base test package |
-| [Pixel BBS Layout](https://github.com/hypersolver/raspberry-pi-xdos/releases/tag/v0.6.2-rc3-xapp6-pxlayout) | Use the current public prerelease with adaptive desktop layout and an SD-based H.264 player |
+| [Pixel BBS Layout](https://github.com/hypersolver/raspberry-pi-xdos/releases/tag/v0.6.2-rc3-xapp6-pxlayout) | Earlier desktop release with adaptive desktop layout and an SD-based H.264 player |
 | [MultiCore Pi 3B+](https://github.com/hypersolver/raspberry-pi-xdos/releases/tag/v0.6.2-rc3-xapp6-multicore) | Evaluate four-core LVGL rendering and 1080p benchmark improvements. [Features and setup](source/v0.6.2-rc3-xapp6/MULTICORE_EN.md) |
 | [All releases](https://github.com/hypersolver/raspberry-pi-xdos/releases) | Find earlier builds, assets and rollback versions |
 
@@ -87,7 +89,7 @@ The PXLAYOUT core image is 1,491,628 bytes. Download the matching XAPPs and SHA-
 
 ## Future applications
 
-The architecture can support embedded status panels, offline utility desktops and bare-metal teaching or test benches. Optional media modules and more device drivers are candidates for future work. MP3 playback, 1080p video decoding and audio capture are tracked separately from the public desktop release, with their current limitations documented in the development notes.
+The architecture can support embedded status panels, offline utility desktops and bare-metal teaching or test benches. Optional media modules and more device drivers are candidates for future work. MP3 playback is available in the media releases. 1080p decoding and audio capture still have documented limitations.
 
 Documentation and source are maintained on main. Release tags identify published builds.
 

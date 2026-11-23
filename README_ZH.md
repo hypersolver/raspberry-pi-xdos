@@ -1,6 +1,6 @@
 # Raspberry Pi XDOS
 
-[English home](README.md) · [基礎版 RC3 XAPP6 Release](https://github.com/hypersolver/raspberry-pi-xdos/releases/tag/v0.6.2-rc3-xapp6)
+[English home](README.md) · [日本語](README_JA.md) · [FVR21 預發行版](https://github.com/hypersolver/raspberry-pi-xdos/releases/tag/v0.6.2-rc3-xapp6-fvr21) · [基礎版 RC3 XAPP6 Release](https://github.com/hypersolver/raspberry-pi-xdos/releases/tag/v0.6.2-rc3-xapp6)
 
 XDOS 是將 XD OS 移植到 Raspberry Pi 的 ARM32 裸機桌面系統。以 Circle 提供硬體支援，使用 LVGL 繪製桌面，並從 microSD 載入外部 XAPP。近期版本以 Raspberry Pi 3B+ 為實機驗證平台，搭配 Windows WSL2 交叉編譯。
 
@@ -20,7 +20,7 @@ Arduino SDK、板卡套件與範例已移至 [RPiDuino](https://github.com/hyper
 2. [Arduino 草稿開發、XAPP 部署與執行](docs/arduino-xapp.zh-TW.md)
 3. [XAPP 桌面捷徑與圖示規格](docs/xapp-desktop-spec.zh-TW.md)
 
-## PXLAYOUT 畫面預覽
+## FVR19 實機畫面
 
 以下為 Raspberry Pi 3B+ 執行 FVR19 的 1920×1080 HDMI 實機截圖。桌面的區網位址已遮蔽。
 
@@ -31,6 +31,8 @@ Arduino SDK、板卡套件與範例已移至 [RPiDuino](https://github.com/hyper
 [LVGL Benchmark 成績畫面](docs/fvr19/benchmark.png)
 
 ## 開發動機與架構
+
+[最新研發紀錄、多 CPU、開機模式、Arduino 與燒錄流程圖](docs/architecture.zh-TW.md)
 
 專案從移植 XD OS 開始，探索如何用小型裸機核心提供互動桌面，並讓應用程式可以分開開發與替換。Pi 開機韌體載入 XDOS 核心，由 Circle 提供 SD、USB、網路和 UART，LVGL 負責桌面，XAPP Loader 透過 ARM32 API 啟動外部應用。顯示使用 VC4 EGL VSync，保留 framebuffer 回退。[系統架構圖](README.md#system-architecture)
 
