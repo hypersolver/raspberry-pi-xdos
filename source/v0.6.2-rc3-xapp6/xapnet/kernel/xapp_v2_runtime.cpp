@@ -459,6 +459,12 @@ int XappV2Runtime::Open(const char *path, const XdosHostApiV1 *api, bool large, 
     return slot;
 }
 
+/* UART CLOSE (Codex 2026-11-23): the focused V2 window, or -1. */
+int XappV2Runtime::FocusedWindow()
+{
+    return Held(focused) && instances[focused].window && !instances[focused].closing ? focused : -1;
+}
+
 bool XappV2Runtime::Close(int slot)
 {
     if (slot < 0 || slot >= (int)XappLoaderV2::Slots || !XappLoaderV2::IsHeld(slot)) return false;

@@ -1469,7 +1469,14 @@ void CKernel::Run()
             serial_.Write(accepted ? "@XDOS PLAYING\r\n" : "@XDOS ERROR\r\n",
                           accepted ? 15 : 13);
         }
-        else if (shortcut==Shortcut::Close) uart.CompleteClose(serial_,ui_.CloseCurrentApp());
+        else if (shortcut==Shortcut::Close) {
+            bool closed = ui_.CloseCurrentApp();
+            if (!closed) {
+                const int slot = XappV2Runtime::FocusedWindow();
+                closed = slot >= 0 && XappV2Runtime::Close(slot);
+            }
+            uart.CompleteClose(serial_, closed);
+        }
         else if (uartOpen) uart.CompleteOpen(serial_,v2ShortcutOpened || (canOpen && !ui_.AtDesktop()));
         PollMusic();
         if (playerPath[0]) {

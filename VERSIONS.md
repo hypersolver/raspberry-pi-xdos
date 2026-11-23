@@ -72,3 +72,7 @@ V0.5 和 V0.5.2 的來源辨識、核心雜湊與使用方式見[早期版本復
 ## FVR21
 
 [Release](https://github.com/hypersolver/raspberry-pi-xdos/releases/tag/v0.6.2-rc3-xapp6-fvr21) · [繁體中文](source/v0.6.2-rc3-xapp6/FVR21_ZH.md) · [English](source/v0.6.2-rc3-xapp6/FVR21_EN.md)
+
+## FVCLOSE
+
+[Release](https://github.com/hypersolver/raspberry-pi-xdos/releases/tag/v0.6.2-rc3-xapp6-fvclose) · [繁體中文](source/v0.6.2-rc3-xapp6/FVCLOSE_ZH.md) · [English](source/v0.6.2-rc3-xapp6/FVCLOSE_EN.md)

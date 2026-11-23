@@ -34,6 +34,8 @@ void CoreApps(char (*cpu)[64]);
 /* Ask the app in `slot` to close (its registered on_close). False when the
  * slot is free or the app registered no close handler. */
 bool Close(int slot);
+/* Focused V2 window slot (gets the keyboard), or -1. */
+int FocusedWindow();
 /* Call once per main-loop pass on core 0, outside lv_timer_handler. */
 void Service();
 /* Mouse from the kernel input loop (0 move, 1 down, 2 up), screen pixels.

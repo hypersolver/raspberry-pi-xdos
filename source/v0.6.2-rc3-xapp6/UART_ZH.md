@@ -12,7 +12,7 @@
 | `LVGL` | `lvgl` | 讀取最近的效能取樣 |
 | OPEN <捷徑> | open BENCHMARK 等 | 可用 NOTEPAD、CALCULATOR、PAINT、FILES、BROWSER、TERMINAL、WIDGETS、BENCHMARK、PLAYER |
 | PLAY <檔案> | play DEMO.MP4 | 從 SD 播 H.264 MP4。相對檔名由 XDOS/INBOX 查找，可用 CLOSE 停止 |
-| `CLOSE` | `close` | 觸發目前 XAPP 的關閉按鈕。視窗關閉動畫完成後可開啟下一個 |
+| `CLOSE` | `close` | 關閉全螢幕 XAPP。FVCLOSE 起也可關閉目前取得焦點的 V2 視窗。使用 XAPP2-CLOSE <slot> 可指定槽位 |
 | `BENCH-RESULT` | `bench-result` | 讀取官方 Benchmark 最近一輪的場景 FPS、Render ms、Flush ms，以及測試起訖的刷新週期和 VC4 狀態 |
 | `PUT <檔名> <長度> <CRC32>`、`DATA <十六進位資料>`、`END` | `scp` | 經 UART 傳檔到 SD 的 `XDOS/INBOX/` |
 | `FETCH <主機 IPv4> <埠> <檔名> <長度> <CRC32>`、`FETCH-STATUS` | `net-scp` | 由 Pi 從區網 HTTP 下載並檢查檔案 |
