@@ -57,6 +57,8 @@ done
 arm-none-eabi-nm -u "$work/files.o" "$work/notepad.o" "$work/calculator.o" "$work/paint.o" "$work/terminal.o" "$work/video.o" "$work/music.o" "$work/browser.o" "$work/widgets.o" "$work/benchmark.o" | awk '$1=="U" {print "LDFLAGS += --undefined=" $2}' | sort -u >> "$sample/xapp-imports.mk"
 cp "$src"/circle-net/*.cpp "$circle/lib/net/"
 make -C "$circle/lib/net" -j4
+cp "$src"/circle-lib/serial.cpp "$circle/lib/"
+make -C "$circle/lib" -j4
 cp "$src"/circle-lvgl/*.cpp "$circle/addon/lvgl/"   # R16-B: core lending limit, sleep/time API
 make -C "$circle/addon/lvgl" -j4
 make -C "$sample" -j4

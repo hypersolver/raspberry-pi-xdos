@@ -129,6 +129,9 @@ public:
     }
 };
 
+extern "C" void xdos_miniuart_info(unsigned *clockRate, unsigned *baudrate);   // circle-lib/serial.cpp
+extern "C" unsigned xdos_miniuart_recheck(void);
+
 // R19 work mode state (main loop, core 0).
 namespace {
 XdosModeConfig modeCfg;
@@ -226,6 +229,13 @@ boolean CKernel::Initialize()
     resolution.Format("[DISPLAY] %ux%u RGB565 (%s)\r\n",fb->GetWidth(),fb->GetHeight(),
                       fallback ? "fallback request 1024x768" : "firmware auto");
     Debug(resolution);
+    {   // R20: the debug console is the mini UART on GPIO14/15 (PL011 left for Bluetooth).
+        unsigned clock=0,baud=0;
+        xdos_miniuart_info(&clock,&baud);
+        CString uartLine;
+        uartLine.Format("[UART] mini UART GPIO14/15, core clock %u Hz, %u baud (921600 requested)\r\n",clock,baud);
+        Debug(uartLine);
+    }
     if(!boot_.Begin(fb)) {
         Debug("[BOOT ERROR] HDMI FRAMEBUFFER UNAVAILABLE\r\n");
         return FALSE;
@@ -796,6 +806,12 @@ void CKernel::Run()
                   "desktop_first_flush" : "desktop_flush_timeout");
 #endif
     InitializeDesktopStorage();
+    if (storageMounted_ && XdosUartService::EnsureCoreClockLock()) {
+        Debug("[UART] config.txt: core_freq=400 / core_freq_min=400 added for the mini UART; restarting\r\n");
+        f_mount(nullptr,"SD:",0);
+        storageMounted_=false;
+        reboot();
+    }
     {   // R19: work mode from SD:/XDOS/XDOS.CFG
         if (storageMounted_) modeCfg = XdosReadModeConfig();
         workMode = modeCfg.mode;
@@ -879,7 +895,44 @@ void CKernel::Run()
 #endif
     static XdosUartService &uart = TerminalUart();
     Debug("[XDOS UART] READY 1\r\n");
+    // R20 safety net for console changes: when SD:/XDOS/INBOX/UARTTEST.FLG exists (written by a
+    // test before BOOT), this boot must receive an @XDOS command within 120 s, else the
+    // previous config.txt is restored and the Pi restarts into the old kernel.
+    bool uartWatchdog=false;
+    const unsigned uartWatchdogStart=CTimer::GetClockTicks();
+    if (storageMounted_) {
+        FILINFO flag{};
+        if (f_stat("SD:/XDOS/INBOX/UARTTEST.FLG",&flag)==FR_OK) {
+            // Kept until a command arrives, so the guard also covers the restart above.
+            uartWatchdog=true;
+            Debug("[UART] test watchdog armed: no @XDOS command in 120 s -> previous kernel\r\n");
+        }
+    }
+    unsigned lastClockCheckUs=CTimer::GetClockTicks();
     while(1) {
+        if (uartWatchdog) {
+            if (uart.CommandCount()) {
+                uartWatchdog=false;
+                if (storageMounted_) f_unlink("SD:/XDOS/INBOX/UARTTEST.FLG");
+                Debug("[UART] test watchdog disarmed (command received)\r\n");
+            } else if ((unsigned)(CTimer::GetClockTicks()-uartWatchdogStart) > 120000000U) {
+                Debug("[UART] test watchdog: no command, restoring previous kernel\r\n");
+                if (storageMounted_) f_unlink("SD:/XDOS/INBOX/UARTTEST.FLG");
+                const bool restored=XdosUartService::RestorePreviousBoot();
+                f_mount(nullptr,"SD:",0);
+                storageMounted_=false;
+                if (restored) reboot();
+                uartWatchdog=false;
+            }
+        }
+        if ((unsigned)(CTimer::GetClockTicks()-lastClockCheckUs) >= 1000000U) {
+            lastClockCheckUs=CTimer::GetClockTicks();
+            if (const unsigned clock=xdos_miniuart_recheck()) {
+                CString line;
+                line.Format("[UART] core clock changed to %u Hz; mini UART divisor updated\r\n",clock);
+                Debug(line);
+            }
+        }
         if (debugSerialReady_) {
             uart.SetNetwork(networkInit_ ? net_ : nullptr);
             uart.Poll(serial_,storageMounted_);

@@ -45,6 +45,45 @@ public:
     }
 
     static bool RestorePreviousBoot() { return RestoreConfig(); }
+    // R20: the mini UART baud rate follows the VPU core clock, which the firmware moves
+    // between 250 and 400 MHz unless config.txt pins it. Make sure config.txt ends with
+    //   [all] / core_freq=400 / core_freq_min=400
+    // (earlier core_freq/core_freq_min lines are dropped). Does not touch the BOOT backup.
+    // Returns true when config.txt was changed (restart needed).
+    static bool EnsureCoreClockLock()
+    {
+        static char input[4096], output[4200];
+        UINT size = 0, used = 0;
+        if (!ReadConfig(Config, input, sizeof input, size)) return false;
+        static constexpr char tail[] = "\n[all]\ncore_freq=400\ncore_freq_min=400\n";
+        if (size >= sizeof tail - 1 && !strcmp(input + size - (sizeof tail - 1), tail)) return false;
+        for (const char *line = input; *line;) {
+            const char *next = strchr(line, '\n');
+            next = next ? next + 1 : input + size;
+            const char *key = line;
+            while (*key == ' ' || *key == '\t') ++key;
+            const bool clock = !strncmp(key, "core_freq=", 10) || !strncmp(key, "core_freq_min=", 14);
+            if (!clock) {
+                memcpy(output + used, line, next - line);
+                used += next - line;
+            }
+            line = next;
+        }
+        while (used && (output[used - 1] == '\n' || output[used - 1] == '\r')) --used;
+        memcpy(output + used, tail, sizeof tail - 1);
+        used += sizeof tail - 1;
+        FIL file;
+        if (f_open(&file, ConfigTemp, FA_WRITE | FA_CREATE_ALWAYS) != FR_OK) return false;
+        UINT written = 0;
+        const bool saved = f_write(&file, output, used, &written) == FR_OK &&
+                           written == used && f_sync(&file) == FR_OK;
+        if (f_close(&file) != FR_OK || !saved) return false;
+        f_unlink("SD:/config.pre20");
+        if (f_rename(Config, "SD:/config.pre20") != FR_OK) return false;
+        if (f_rename(ConfigTemp, Config) == FR_OK) return true;
+        f_rename("SD:/config.pre20", Config);
+        return false;
+    }
     const char *PlayPath() const { return playPath_; }
     bool TransferActive() const { return active_; }
     // XDOS_CORE_JOBS: V2 app test commands, executed by the kernel main loop.
@@ -68,6 +107,7 @@ public:
         return true;
     }
     static void Send(CSerialDevice &serial, const char *text) { Reply(serial, text); }
+    unsigned CommandCount() const { return commands_; }   // valid @XDOS commands received
     bool PowerTransferActive() const { return active_ || fetchState_==FetchState::Working; }
     void SetNetwork(CNetSubSystem *net) { net_ = net; }
 
@@ -154,6 +194,7 @@ private:
     int xapp2Close_ = -1;
     bool xapp2Status_ = false;
     char modeArg_[12] = {};
+    unsigned commands_ = 0;
     char playPath_[192]{};
     enum class FetchState { Idle, Working, Done, Failed };
     FetchState fetchState_ = FetchState::Idle;
@@ -229,7 +270,22 @@ private:
 
     static void Reply(CSerialDevice &serial, const char *text)
     {
-        serial.Write(text, strlen(text));
+        // CSerialDevice::Write drops the tail when the TX ring is full (long
+        // FILE LIST / HELP bursts on the 8-byte-FIFO mini UART). Wait for the
+        // TX interrupt to drain it instead; give up after ~200 ms without progress.
+        size_t left = strlen(text);
+        unsigned idle = 0;
+        while (left > 0) {
+            int done = serial.Write(text, left);
+            if (done > 0) {
+                text += done;
+                left -= (size_t)done;
+                idle = 0;
+            } else {
+                if (++idle > 2000) break;
+                CTimer::SimpleusDelay(100);
+            }
+        }
     }
 
     static void ReportPower(XdosCommandReply reply)
@@ -583,8 +639,29 @@ private:
 
     void RunFileCommand(const char *args, XdosCommandReply reply)
     {
+        if (!strncmp(args, "LIST ", 5)) {   // R20: "FILE LIST SD:/XDOS/INBOX" -> one "FILE <size> <name>" per entry
+            DIR dir;
+            if (f_opendir(&dir, args + 5) != FR_OK) {
+                reply.Write("FILE LIST: cannot open directory\r\n@XDOS ERROR\r\n");
+                return;
+            }
+            FILINFO info;
+            unsigned count = 0;
+            while (f_readdir(&dir, &info) == FR_OK && info.fname[0]) {
+                CString line;
+                line.Format("FILE %u %s%s\r\n", (unsigned)info.fsize, info.fname,
+                            (info.fattrib & AM_DIR) ? "/" : "");
+                reply.Write((const char *)line);
+                ++count;
+            }
+            f_closedir(&dir);
+            CString done;
+            done.Format("FILE LIST: %u entries\r\n@XDOS OK\r\n", count);
+            reply.Write((const char *)done);
+            return;
+        }
         if (strncmp(args, "DELETE ", 7)) {
-            reply.Write("Usage: FILE DELETE <SD:/XDOS/path or USB:/path>\r\n@XDOS ERROR\r\n");
+            reply.Write("Usage: FILE DELETE <SD:/XDOS/path or USB:/path> | FILE LIST <dir>\r\n@XDOS ERROR\r\n");
             return;
         }
         if (PowerTransferActive()) {
@@ -641,6 +718,7 @@ private:
         if (strncmp(line_, "@XDOS ", 6)) return;
         char *cmd = line_ + 6;
         const auto *entry = FindCommand(cmd);
+        if (entry) ++commands_;
         const auto command = entry ? entry->command : Command::Unknown;
         const XdosCommandReply reply{&serial, [](void *port,const char *message) {
             Reply(*static_cast<CSerialDevice *>(port),message);
