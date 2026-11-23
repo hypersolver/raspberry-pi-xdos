@@ -587,11 +587,12 @@ private:
         return SetKernel(args);
     }
 
-    enum class Command { Unknown, Help, Ping, Power, Lvgl, BenchResult, Audio, Open, Play, Close, Fetch, FetchStatus, Reset, Cancel, Boot, BootClear, Put, Data, End, HdmiMode, Xapp2, Xapp2Close, Xapp2Status, File, Mode };
+    enum class Command { Unknown, Help, Ping, Power, Lvgl, BenchResult, Audio, Open, Play, Close, Fetch, FetchStatus, Reset, Cancel, Boot, BootClear, Put, Data, End, HdmiMode, Xapp2, Xapp2Close, Xapp2Status, File, Mode, Net };
     struct CommandEntry { Command command; const char *name; bool arguments; bool terminal; };
     static constexpr CommandEntry commandTable_[] = {
         {Command::Help, "HELP", false, true},
         {Command::Ping, "PING", false, true},
+        {Command::Net, "NET", false, true},
         {Command::Power, "POWER", false, true},
         {Command::Lvgl, "LVGL", false, true},
         {Command::BenchResult, "BENCH-RESULT", false, true},
@@ -684,6 +685,25 @@ private:
             PrintHelp(reply,terminal);
             return true;
         }
+        if (command==Command::Net) {
+            if (!net_) {
+                reply.Write("@XDOS NET up=0 init=0 @XDOS OK\r\n");
+                return true;
+            }
+            const auto *config = net_->GetConfig();
+            const u8 *ip = config->GetIPAddress()->Get();
+            const u8 *mask = config->GetNetMask();
+            u8 gateway[4] = {};
+            if (config->GetDefaultGateway()) config->GetDefaultGateway()->CopyTo(gateway);
+            CString line;
+            line.Format("@XDOS NET up=%u mode=%s ip=%u.%u.%u.%u mask=%u.%u.%u.%u gw=%u.%u.%u.%u @XDOS OK\r\n",
+                        net_->IsRunning() ? 1U : 0U, config->IsDHCPUsed() ? "dhcp" : "static",
+                        ip[0], ip[1], ip[2], ip[3], mask[0], mask[1], mask[2], mask[3],
+                        gateway[0], gateway[1], gateway[2], gateway[3]);
+            reply.Write((const char *)line);
+            return true;
+        }
+
         if (command==Command::Ping) {
             reply.Write("@XDOS READY 1\r\n");
             return true;
