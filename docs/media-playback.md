@@ -36,6 +36,6 @@ Image View in FVLANG1 · FVLANG1 相片檢視 · FVLANG1 の画像表示
 
 ![FVLANG1 MP4 Player controls on Pi 3B+](media/video-fvlang1.jpg)
 
-MP4 Player controls · 影片播放器操作介面 · 動画プレーヤーの操作画面
+720p MP4 playback requested · 已送出 720p 影片播放要求 · 720p 動画の再生要求を送信
 
 [Media release and compatibility](multicore-media.md) · [Installation and wiring](flashing-by-board.md)
