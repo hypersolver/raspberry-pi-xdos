@@ -26,87 +26,28 @@ Arduino では [RPiDuino SDK](https://github.com/hypersolver/RPiDuino) の Pi 3/
 
 ### システム構成
 
-~~~mermaid
-flowchart TD
-    FW["Pi firmware + config.txt"] --> IMG["XDOS ARM32 IMG"]
-    IMG --> C["Circle: FAT32 / USB / Ethernet / UART"]
-    IMG --> D["XDOS desktop + LVGL"]
-    D --> VC["VC4 GLES2 / EGL VSync"]
-    D --> FB["VSyncOpt / framebuffer"]
-    IMG --> V2["XAPP V2 loader"]
-    V2 --> APPS["microSD: .APP + .XAPP"]
-~~~
+![XDOS system architecture](diagrams/system.png)
 
 ### マルチコアの実行構成
 
-~~~mermaid
-flowchart LR
-    CPU0["CPU0: UI / IRQ / I/O / scheduler"] --> DRAW["LVGL draw work"]
-    DRAW --> C1["CPU1"]
-    DRAW --> C2["CPU2"]
-    DRAW --> C3["CPU3"]
-    C1 -. "lend when available" .-> APP["XAPP compute"]
-    C2 -.-> APP
-    C3 -.-> APP
-    APP -->|request| CPU0
-~~~
+![Four-core execution](diagrams/multicore.png)
 
 ### デスクトップ・KIOSK・IOT
 
-~~~mermaid
-flowchart TD
-    CFG["XDOS/XDOS.CFG or INBOX fallback"] --> MODE{"MODE"}
-    MODE -->|DESKTOP| D["Desktop"]
-    MODE -->|KIOSK| K["KIOSK= .XAPP / Full"]
-    MODE -->|IOT| I["Background / Screen=None"]
-    MODE -->|AUTO| A{"KIOSK set?"}
-    A -->|Yes| K
-    A -->|No| D
-    K --> EXIT{"KIOSK_EXIT"}
-    EXIT -->|RESTART| K
-    EXIT -->|DESKTOP| D
-    EXIT -->|REBOOT| CFG
-~~~
+![XDOS boot modes](diagrams/modes.png)
 
 ### Arduino XAPP の構成
 
-~~~mermaid
-flowchart LR
-    IDE["Arduino IDE + RPiDuino"] --> SK["Sketch: setup / loop"]
-    SK --> BUILD["Pi 3/3B+ · XDOS XAPP"]
-    BUILD --> FILE["V2 .XAPP + optional .APP"]
-    FILE --> LOAD["XDOS loader / ARM32 imports"]
-    LOAD --> SCREEN["Screen=Full / Window / None"]
-    LOAD --> SERVICE["XDOS API / CPU0 services"]
-~~~
+![Arduino sketches as XDOS XAPPs](diagrams/arduino.png)
 
 ### microSD への書き込みと更新
 
-~~~mermaid
-flowchart TD
-    PKG["Release files + SHA-256"] --> PLAN{"Install or update?"}
-    PLAN -->|First install| SD["FAT boot partition + Pi firmware"]
-    SD --> COPY["Copy IMG / XAPP; set kernel= in config.txt"]
-    PLAN -->|Kernel update| NET["UART NET → LAN transfer or UART PUT"]
-    NET --> CHECK["CRC32 → BOOT → RESET"]
-    COPY --> RUN["Pi 3B+: boot + PING READY"]
-    CHECK --> RUN
-    PLAN -->|Arduino XAPP only| APP["Copy or upload .XAPP; install .APP if needed"]
-    APP --> TEST["Launch from XDOS"]
-    RUN -->|Failure| RB["Restore previous kernel and config"]
-~~~
+![microSD installation and live updates](diagrams/install.png)
 
 
 ### ドキュメントの言語と実行時フォント
 
-~~~mermaid
-flowchart LR
-    DOC["Public documentation"] --> EN["English"]
-    DOC --> TC["繁體中文"]
-    DOC --> JP["日本語"]
-    SD["microSD / FONTS"] -. "experimental" .-> FONT["LVGL Traditional Chinese fallback"]
-    FONT -.-> UI["LVGL XAPP text and FVLANG1 labels"]
-~~~
+![Documentation and runtime languages](diagrams/languages.png)
 
 ![Pi 3B+ の繁体字デスクトップ（FVLANG1 試験版、LAN アドレスはマスク済み）](fvlang1/desktop-zh-tw.png)
 
@@ -114,11 +55,4 @@ Pi 3B+ の繁体字デスクトップ（FVLANG1 試験版、LAN アドレスは�
 
 ### 開発とリリースの流れ
 
-~~~mermaid
-flowchart LR
-    SRC["Git source + dependency revisions"] --> BUILD["WSL cross-build"]
-    BUILD --> ART["IMG / XAPP / SHA-256"]
-    ART --> HW["Pi 3B+ / UART / HDMI"]
-    HW -->|Pass| PUB["GitHub main + Release"]
-    HW -->|Fail| RB["Rollback and investigate"]
-~~~
+![Development and release flow](diagrams/development.png)

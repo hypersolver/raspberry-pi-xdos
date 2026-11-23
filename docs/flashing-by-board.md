@@ -40,30 +40,11 @@
 
 ## Wiring · 接線 · 配線
 
-~~~mermaid
-flowchart LR
-    PC["PC"] -->|"USB data"| A["3.3 V USB–TTL"]
-    A -->|"TX → pin 10 / GPIO15 RX"| P3["Pi 3B / 3B+"]
-    P3 -->|"pin 8 / GPIO14 TX → RX"| A
-    A ---|"GND ↔ pin 6; VCC disconnected"| P3
-    PSU["Separate Pi power supply"] -->|"Micro USB power"| P3
-    PC <-->|"Ethernet via LAN"| P3
-    PC -->|"USB-C data cable"| P45["Pi 4 / Pi 5 USB-C device port"]
-    P45 -.-> G["Compatible USB gadget + update receiver required"]
-~~~
+![Raspberry Pi update wiring](diagrams/wiring.png)
 
 ## Flashing paths · 燒錄路徑 · 書き込みフロー
 
-~~~mermaid
-flowchart TD
-    B{"Deployment path"} -->|"Pi 3B / 3B+ first install or recovery"| SD["PC card reader → FAT boot partition → Pi firmware + IMG + config.txt"]
-    B -->|"Pi 3B / 3B+ runtime"| LINK["GPIO UART PUT or Ethernet FETCH"]
-    LINK --> C["microSD / XDOS / INBOX → CRC32"]
-    C -->|"Kernel IMG"| K["BOOT → RESET → PING"]
-    C -->|"Arduino XAPP"| A["Install .APP if needed → launch"]
-    B -.->|"Pi 4 / Pi 5 runtime USB-C · unverified in XDOS"| USB["USB device enumeration → gadget transport → compatible update receiver"]
-    USB -.-> C
-~~~
+![Board-specific flashing paths](diagrams/board-flashing.png)
 
 For a Pi 4 / Pi 5 USB connection, use a data-capable cable and a power arrangement suitable for the board. A USB device connection under another OS does not establish that XDOS can accept an update through it.
 

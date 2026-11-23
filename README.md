@@ -3,7 +3,7 @@
 [繁體中文](README_ZH.md) · [日本語](README_JA.md) · [FVR21 prerelease](https://github.com/hypersolver/raspberry-pi-xdos/releases/tag/v0.6.2-rc3-xapp6-fvr21) · [Base XAPP6 Release](https://github.com/hypersolver/raspberry-pi-xdos/releases/tag/v0.6.2-rc3-xapp6)
 
 XDOS is an ARM32 bare-metal desktop for Raspberry Pi. Circle provides the hardware support, LVGL draws the desktop, and the system loads external XAPPs from microSD. The earlier PXLAYOUT prerelease was tested on a Raspberry Pi 3B+ at 1280×720 and 1920×1080.
-[Board-specific wiring and flashing paths](docs/flashing-by-board.md)
+[Board-specific wiring and flashing paths](docs/flashing-by-board.md) · [Network, work modes and language configuration](docs/configuration.md) · [Music, photo and video playback](docs/media-playback.md)
 
 ## RPiDuino Arduino SDK
 
@@ -39,31 +39,13 @@ XDOS started as a port of XD OS to Raspberry Pi. It explores how far a small bar
 
 [Current development record, multicore, boot modes, Arduino, and flashing diagrams](docs/architecture.md)
 
-~~~mermaid
-flowchart TD
-    Boot["Pi boot firmware and config.txt"] --> Kernel["XDOS ARM32 kernel"]
-    Kernel --> Circle["Circle hardware services"]
-    Circle --> Devices["SD / FAT32, USB, Ethernet and UART"]
-    Kernel --> UI["LVGL desktop and application windows"]
-    UI --> Display["VC4 GLES2 / EGL VSync or framebuffer fallback"]
-    Kernel --> Loader["XAPP loader and ARM32 host API"]
-    Loader --> Apps["External XAPPs on microSD"]
-    Apps --> UI
-~~~
+![XDOS system architecture](docs/diagrams/system.png)
 
 The core owns startup, device services, the desktop, the four-slot V2 runtime and recovery commands. V2 modules can bind to compatible host exports at load time. Bound modules still require the matching kernel fingerprint.
 
 ## Development and deployment
 
-~~~mermaid
-flowchart LR
-    Source["Source and pinned dependencies"] --> Build["WSL2 ARM32 cross-build"]
-    Build --> Bundle["Kernel IMG, paired XAPPs and SHA-256"]
-    Bundle --> Stage["UART commands and LAN file transfer"]
-    Stage --> Pi["Pi 3B+ hardware validation"]
-    Pi --> Release["GitHub main, release tag and assets"]
-    Pi -->|Failure| Rollback["Select previous IMG and reset"]
-~~~
+![Development and release flow](docs/diagrams/development.png)
 
 Review IMG and ELF changes, build matching XAPPs, and confirm startup, display, input and rollback on hardware before publishing. Each release keeps its own checksums and validation notes.
 
