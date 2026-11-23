@@ -3,6 +3,7 @@
 [English](README.md) · [繁體中文](README_ZH.md) · [FVR21 プレリリース](https://github.com/hypersolver/raspberry-pi-xdos/releases/tag/v0.6.2-rc3-xapp6-fvr21) · [基本版 XAPP6](https://github.com/hypersolver/raspberry-pi-xdos/releases/tag/v0.6.2-rc3-xapp6)
 
 XDOS は Raspberry Pi 向けの ARM32 ベアメタルデスクトップです。Circle がデバイスを管理し、LVGL がアプリの画面を描画します。外部 XAPP は microSD から読み込みます。公開版の主な実機検証環境は Raspberry Pi 3B+ です。
+[機種別の配線と書き込み手順](docs/flashing-by-board.md)
 
 ## 実機画面
 

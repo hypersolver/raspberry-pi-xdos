@@ -3,6 +3,7 @@
 [English home](README.md) · [日本語](README_JA.md) · [FVR21 預發行版](https://github.com/hypersolver/raspberry-pi-xdos/releases/tag/v0.6.2-rc3-xapp6-fvr21) · [基礎版 RC3 XAPP6 Release](https://github.com/hypersolver/raspberry-pi-xdos/releases/tag/v0.6.2-rc3-xapp6)
 
 XDOS 是將 XD OS 移植到 Raspberry Pi 的 ARM32 裸機桌面系統。以 Circle 提供硬體支援，使用 LVGL 繪製桌面，並從 microSD 載入外部 XAPP。近期版本以 Raspberry Pi 3B+ 為實機驗證平台，搭配 Windows WSL2 交叉編譯。
+[各板型接線與燒錄路徑](docs/flashing-by-board.md)
 
 ## RPiDuino Arduino SDK
 

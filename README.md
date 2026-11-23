@@ -3,6 +3,7 @@
 [繁體中文](README_ZH.md) · [日本語](README_JA.md) · [FVR21 prerelease](https://github.com/hypersolver/raspberry-pi-xdos/releases/tag/v0.6.2-rc3-xapp6-fvr21) · [Base XAPP6 Release](https://github.com/hypersolver/raspberry-pi-xdos/releases/tag/v0.6.2-rc3-xapp6)
 
 XDOS is an ARM32 bare-metal desktop for Raspberry Pi. Circle provides the hardware support, LVGL draws the desktop, and the system loads external XAPPs from microSD. The earlier PXLAYOUT prerelease was tested on a Raspberry Pi 3B+ at 1280×720 and 1920×1080.
+[Board-specific wiring and flashing paths](docs/flashing-by-board.md)
 
 ## RPiDuino Arduino SDK
 
