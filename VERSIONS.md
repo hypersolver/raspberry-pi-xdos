@@ -4,6 +4,7 @@
 
 | 版本 | 公開資料與狀態 |
 | --- | --- |
+| C17CTOR | [操作與實測紀錄](source/v0.6.2-rc3-xapp6/C17CTOR.md)。Pi 3B+ 已驗證 V2 靜態建構子與舊 J7 捷徑。 |
 | C17ABI | [操作與實測紀錄](source/v0.6.2-rc3-xapp6/C17ABI.md)。保留 5,622 個 ABI 匯出，Pi 3B+ 已驗證十個 J7 捷徑開關。 |
 | V0.4 | [V0.4 重建版](archive/reconstructed/v0.4/) 有原始碼、Ethernet／Wi-Fi IMG、SHA-256 及差異說明。原發行檔尚未找回，重建映像尚未實機開機。 |
 | V0.5 | [從 Pi 4 找回的原始碼與核心映像](archive/XDOS-V0.5-Pi4-recovered.zip)。原發行 ZIP 尚未找回。 |

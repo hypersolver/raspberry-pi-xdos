@@ -120,16 +120,17 @@ def linker_script(bindings, fingerprint, bound, imports=None):
     checksum = len(imports) if imports is not None else (fingerprint if bound else 0)
     return f"""OUTPUT_FORMAT("elf32-littlearm")
 OUTPUT_ARCH(arm)
-ENTRY(xapp_entry)
+ENTRY(xapp_v2_start)
 {bindings}
 SECTIONS {{
     . = 0x{LINK_BASE:x};
     .header : {{ LONG(0x50414458) LONG(2) LONG({HEADER_BYTES})
-        LONG(0) LONG(xapp_entry - 0x{LINK_BASE:x}) LONG({flags}) LONG(0x{checksum:x})
+        LONG(0) LONG(xapp_v2_start - 0x{LINK_BASE:x}) LONG({flags}) LONG(0x{checksum:x})
         LONG(0x{LINK_BASE:x}) LONG(image_end - 0x{LINK_BASE:x}) LONG(bss_end - image_end)
         LONG(0) LONG(0) }}
     .text : {{ *(.text*) *(.rodata*) . = ALIGN(4); xapp_v2_veneers = .; . += {VENEER_SLOTS * 8}; }}
-    .data : {{ *(.data*) . = ALIGN(4); }}
+    .data : {{ *(.data*) . = ALIGN(4);
+        __xdos_init_start = .; KEEP(*(.init_array*)) __xdos_init_end = .; }}
     image_end = .;
     .bss (NOLOAD) : {{ *(.bss*) *(COMMON) . = ALIGN(4); }}
     bss_end = .;
@@ -258,6 +259,30 @@ def plt_source(functions, index):
     return "\n".join(lines) + "\n"
 
 
+# Module entry: run the C++ static initializers (.init_array, e.g. a global
+# `const lv_color_t c = lv_color_hex(...)`), then xapp_entry. Before this, --gc-sections
+# dropped .init_array silently and such globals stayed 0 (Claude 2026-11-24, 0063).
+START_SOURCE = """    .arm
+    .text
+    .global xapp_v2_start
+    .type xapp_v2_start,%function
+xapp_v2_start:
+    push {r4, r5, r6, lr}
+    mov r6, r0
+    ldr r4, =__xdos_init_start
+    ldr r5, =__xdos_init_end
+1:  cmp r4, r5
+    bhs 2f
+    ldr r3, [r4], #4
+    blx r3
+    b 1b
+2:  mov r0, r6
+    pop {r4, r5, r6, lr}
+    b xapp_entry
+    .ltorg
+"""
+
+
 def pack(objects, symbols, fingerprint, out, bound=True, keep=None, kinds=None):
     """kinds (name -> 'func'/'data', from kernel_symbol_kinds) selects the
     kernel-independent import format; otherwise the module is bound as before."""
@@ -275,6 +300,11 @@ def pack(objects, symbols, fingerprint, out, bound=True, keep=None, kinds=None):
     work.mkdir(parents=True, exist_ok=True)
     import_names = import_symbols = None
     link_objects = list(objects)
+    start_s = work / "xdos_start.s"
+    start_s.write_text(START_SOURCE, encoding="ascii")
+    start_o = work / "xdos_start.o"
+    run("arm-none-eabi-as", "-mcpu=cortex-a53", start_s, "-o", start_o)
+    link_objects.append(start_o)
     if kinds is not None:
         import_names = [ABI_GATE] + sorted(imports)
         index = {n: i for i, n in enumerate(import_names)}
