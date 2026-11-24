@@ -54,6 +54,9 @@ for app in widgets benchmark; do
     arm-none-eabi-g++ "${demo_flags[@]}" "${extra[@]}" -c "$src/../tools/rc3-uart/sketch_xapp.cpp" -o "$work/$app-entry.o"
     arm-none-eabi-ld -r -o "$work/$app.o" "$work/$app-sketch.o" "$work/$app-entry.o" "${app_objects[@]}"
 done
+# R17: keep every name of the ABI export list in the kernel, used or not.
+"${PACK_PYTHON:-python3}" "$tool/gen_exports.py" --keep "$src/abi-exports.txt" "$sample/xdos_abi_keep.c"
+echo 'OBJS += xdos_abi_keep.o' >> "$sample/xapp-imports.mk"
 arm-none-eabi-nm -u "$work/files.o" "$work/notepad.o" "$work/calculator.o" "$work/paint.o" "$work/terminal.o" "$work/video.o" "$work/music.o" "$work/browser.o" "$work/widgets.o" "$work/benchmark.o" | awk '$1=="U" {print "LDFLAGS += --undefined=" $2}' | sort -u >> "$sample/xapp-imports.mk"
 cp "$src"/circle-net/*.cpp "$circle/lib/net/"
 make -C "$circle/lib/net" -j4
@@ -64,7 +67,8 @@ make -C "$circle/addon/lvgl" -j4
 make -C "$sample" -j4
 # R17: second link with the export table, so kernel-independent XAPPs can bind
 # their imports at load time. The table references every exported symbol.
-"${PACK_PYTHON:-python3}" "$tool/gen_exports.py" "$sample/kernel8-32.elf" "$sample/xdos_exports.c"
+"${PACK_PYTHON:-python3}" "$tool/gen_exports.py" "$sample/kernel8-32.elf" "$sample/xdos_exports.c" --require "$src/abi-exports.txt"
+sed -i '/xdos_abi_keep.o/d' "$sample/xapp-imports.mk"   # the export table now keeps them
 echo 'OBJS += xdos_exports.o' >> "$sample/xapp-imports.mk"
 make -C "$sample" -j4
 cp "$sample/kernel8-32.img" "$out/$tag.IMG"
