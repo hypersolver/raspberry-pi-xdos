@@ -5,15 +5,17 @@
 XDOS は Raspberry Pi 向けの ARM32 ベアメタルデスクトップです。Circle がデバイスを管理し、LVGL がアプリの画面を描画します。外部 XAPP は microSD から読み込みます。公開版の主な実機検証環境は Raspberry Pi 3B+ です。
 [機種別の配線と書き込み手順](docs/flashing-by-board.md) · [ネットワーク・起動モード・言語の設定](docs/configuration.md) · [音楽・写真・動画の操作](docs/media-playback.md)
 
-## 実機画面
+## XDOS の画面
 
-FVR19 を Raspberry Pi 3B+ で動かし、HDMI から 1920×1080 で撮影しました。LAN アドレスはマスク済みです。
+新しいデスクトップには粒状のグラデーション、フローティングドック、コアごとの CPU 使用率を表示するステータスカードがあります。起動画面には進捗バーと各段階の診断結果を表示します。Raspberry Pi 3B+ 上の開発ビルドを HDMI で 1280×720 で撮影しました。LAN アドレスはマスク済みです。
 
-| 起動画面 | デスクトップ |
+| 起動診断 | デスクトップ |
 | --- | --- |
-| ![FVR19 起動画面](docs/fvr19/boot.png) | ![FVR19 デスクトップ](docs/fvr19/desktop.png) |
+| ![XDOS の起動診断](docs/ui/boot.jpg) | ![XDOS のデスクトップ](docs/ui/desktop.png) |
 
-[LVGL Benchmark の結果画面](docs/fvr19/benchmark.png)
+右下の XDOS ロゴを明るくしたデザインは実機での確認待ちです。[ロゴのプレビュー](docs/ui/logo-preview.png)
+
+[FVR19 起動画面](docs/fvr19/boot.png) · [FVR19 デスクトップ](docs/fvr19/desktop.png) · [FVR19 LVGL Benchmark](docs/fvr19/benchmark.png)
 
 ## インストールと開発
 

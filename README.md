@@ -21,15 +21,17 @@ The Arduino SDK, board package, and examples are maintained in [RPiDuino](https:
 2. [Build, deploy and run Arduino sketches as XAPPs (繁體中文)](docs/arduino-xapp.zh-TW.md)
 3. [XAPP desktop shortcut and icon specification](docs/xapp-desktop-spec.md)
 
-## FVR19 hardware screenshots
+## XDOS interface
 
-FVR19 running on a Raspberry Pi 3B+, captured over HDMI at 1920×1080. The desktop LAN address is masked.
+The updated desktop has a grain-gradient wallpaper, a floating dock, and a system status card with per-core CPU activity. The boot screen adds a progress bar and step-by-step diagnostics. These 1280×720 HDMI captures show development builds on Raspberry Pi 3B+. The desktop LAN address is masked.
 
-| Boot splash | Desktop |
+| Boot diagnostics | Desktop |
 | --- | --- |
-| ![FVR19 boot screen](docs/fvr19/boot.png) | ![FVR19 desktop](docs/fvr19/desktop.png) |
+| ![XDOS boot diagnostics](docs/ui/boot.jpg) | ![XDOS desktop](docs/ui/desktop.png) |
 
-[LVGL Benchmark results screenshot](docs/fvr19/benchmark.png)
+The brighter lower-right XDOS wordmark is a design preview awaiting hardware verification. [Wordmark preview](docs/ui/logo-preview.png)
+
+[FVR19 boot screen](docs/fvr19/boot.png) · [FVR19 desktop](docs/fvr19/desktop.png) · [FVR19 LVGL Benchmark](docs/fvr19/benchmark.png)
 
 ## Why XDOS
 

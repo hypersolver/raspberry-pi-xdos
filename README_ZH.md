@@ -21,15 +21,17 @@ Arduino SDK、板卡套件與範例已移至 [RPiDuino](https://github.com/hyper
 2. [Arduino 草稿開發、XAPP 部署與執行](docs/arduino-xapp.zh-TW.md)
 3. [XAPP 桌面捷徑與圖示規格](docs/xapp-desktop-spec.zh-TW.md)
 
-## FVR19 實機畫面
+## XDOS 介面
 
-以下為 Raspberry Pi 3B+ 執行 FVR19 的 1920×1080 HDMI 實機截圖。桌面的區網位址已遮蔽。
+新版桌面採用顆粒漸層、浮動 Dock，以及顯示各核心使用率的系統狀態卡。開機畫面新增進度條與逐步診斷。下圖為 Raspberry Pi 3B+ 開發版本的 1280×720 HDMI 實機擷取，桌面的區網位址已遮蔽。
 
-| 開機畫面 | 桌面 |
+| 開機診斷 | 桌面 |
 | --- | --- |
-| ![FVR19 開機畫面](docs/fvr19/boot.png) | ![FVR19 桌面](docs/fvr19/desktop.png) |
+| ![XDOS 開機診斷](docs/ui/boot.jpg) | ![XDOS 桌面](docs/ui/desktop.png) |
 
-[LVGL Benchmark 成績畫面](docs/fvr19/benchmark.png)
+右下角 XDOS 字樣的提亮版目前為設計預覽，待實機驗證。[字樣提亮預覽](docs/ui/logo-preview.png)
+
+[FVR19 開機畫面](docs/fvr19/boot.png) · [FVR19 桌面](docs/fvr19/desktop.png) · [FVR19 LVGL Benchmark](docs/fvr19/benchmark.png)
 
 ## 開發動機與架構
 
