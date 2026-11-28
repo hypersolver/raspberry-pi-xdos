@@ -13,7 +13,7 @@ XDOS は Raspberry Pi 向けの ARM32 ベアメタルデスクトップです。
 | --- | --- |
 | ![XDOS の起動診断](docs/ui/boot.jpg) | ![XDOS のデスクトップ](docs/ui/desktop.png) |
 
-右下の XDOS ロゴを明るくしたデザインは実機での確認待ちです。[ロゴのプレビュー](docs/ui/logo-preview.png)
+デスクトップは Raspberry Pi 3B+ 上の FVDOOMD を撮影したものです。右下の XDOS ロゴは上部を明るくした青緑のグラデーションです。
 
 [FVR19 起動画面](docs/fvr19/boot.png) · [FVR19 デスクトップ](docs/fvr19/desktop.png) · [FVR19 LVGL Benchmark](docs/fvr19/benchmark.png)
 

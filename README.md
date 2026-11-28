@@ -29,7 +29,7 @@ The updated desktop has a grain-gradient wallpaper, a floating dock, and a syste
 | --- | --- |
 | ![XDOS boot diagnostics](docs/ui/boot.jpg) | ![XDOS desktop](docs/ui/desktop.png) |
 
-The brighter lower-right XDOS wordmark is a design preview awaiting hardware verification. [Wordmark preview](docs/ui/logo-preview.png)
+The desktop capture shows FVDOOMD running on Raspberry Pi 3B+ with the brighter top edge of the lower-right XDOS wordmark.
 
 [FVR19 boot screen](docs/fvr19/boot.png) · [FVR19 desktop](docs/fvr19/desktop.png) · [FVR19 LVGL Benchmark](docs/fvr19/benchmark.png)
 

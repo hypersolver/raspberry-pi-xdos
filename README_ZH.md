@@ -29,7 +29,7 @@ Arduino SDK、板卡套件與範例已移至 [RPiDuino](https://github.com/hyper
 | --- | --- |
 | ![XDOS 開機診斷](docs/ui/boot.jpg) | ![XDOS 桌面](docs/ui/desktop.png) |
 
-右下角 XDOS 字樣的提亮版目前為設計預覽，待實機驗證。[字樣提亮預覽](docs/ui/logo-preview.png)
+桌面實拍來自 Raspberry Pi 3B+ 執行的 FVDOOMD，右下角 XDOS 字樣已採用上方提亮的青綠漸層。
 
 [FVR19 開機畫面](docs/fvr19/boot.png) · [FVR19 桌面](docs/fvr19/desktop.png) · [FVR19 LVGL Benchmark](docs/fvr19/benchmark.png)
 
